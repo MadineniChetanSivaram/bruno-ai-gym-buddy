@@ -18,6 +18,7 @@ import { Building2, ShieldCheck, Dumbbell, Calendar, Clock, Check, Sparkles } fr
 import { UserProfile, GymEnvironment, JointContraindication } from '../../types';
 import { useBruno } from '../../context/BrunoContext';
 import { TactileButton } from '../common/TactileButton';
+import { BrunoCharacterSvg } from '../mascot/BrunoCharacterSvg';
 
 interface OnboardingFlowProps {
   onComplete: (profile: UserProfile) => void;
@@ -117,10 +118,8 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
     return (
       <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
         <View style={styles.generatingContainer}>
-          <View style={[styles.mascotGenCircle, { backgroundColor: colors.amberGlow, borderColor: colors.amber }]}>
-            <Text style={{ fontSize: 64 }}>🐻⚡</Text>
-          </View>
-          <Text style={[styles.genTitle, { color: colors.textPrimary }]}>
+          <BrunoCharacterSvg expression="intense_lift" size={140} animated={true} />
+          <Text style={[styles.genTitle, { color: colors.textPrimary, marginTop: 16 }]}>
             Bruno is Writing Your Program
           </Text>
           <Text style={[styles.genSubtitle, { color: colors.amber }]}>
@@ -155,8 +154,8 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
           {/* STEP 1: WELCOME TO THE DEN */}
           {step === 1 && (
             <View style={styles.stepContainer}>
-              <View style={[styles.mascotAvatarLarge, { backgroundColor: colors.surfaceSubtle, borderColor: colors.borderHighlight }]}>
-                <Text style={{ fontSize: 60 }}>🐻📖</Text>
+              <View style={styles.mascotAvatarLarge}>
+                <BrunoCharacterSvg expression="idle_reading" size={150} animated={true} />
               </View>
 
               <View style={[styles.kickerPill, { backgroundColor: colors.amberGlow }]}>

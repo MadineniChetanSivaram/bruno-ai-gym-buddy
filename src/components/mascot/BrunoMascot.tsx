@@ -1,19 +1,19 @@
 // src/components/mascot/BrunoMascot.tsx
-// Expressive, Animated Bruno Mascot (Clucky / Amble style)
-// Stateful bear with breathing loop, blinking physics, floating chalk particles, and interactive speech bubbles
+// High-Craft Animated Bruno Mascot (Satya / Clucky style)
+// Powered by custom-illustrated BrunoCharacterSvg, dynamic speech bubble, and interactive reactions
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { 
   View, 
   Text, 
   StyleSheet, 
   Animated, 
-  TouchableOpacity, 
-  Easing 
+  TouchableOpacity 
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { MascotState } from '../../types';
 import { useBruno } from '../../context/BrunoContext';
+import { BrunoCharacterSvg, BearExpression } from './BrunoCharacterSvg';
 
 interface BrunoMascotProps {
   state: MascotState;
@@ -29,77 +29,39 @@ export const BrunoMascot: React.FC<BrunoMascotProps> = ({
   interactive = true 
 }) => {
   const { colors } = useBruno();
-
-  // Animations
-  const breatheAnim = useRef(new Animated.Value(1)).current;
-  const bounceAnim = useRef(new Animated.Value(1)).current;
-  const blinkAnim = useRef(new Animated.Value(1)).current;
-  const chalkDustAnim = useRef(new Animated.Value(0)).current;
-  const earWiggleAnim = useRef(new Animated.Value(0)).current;
-
+  const bounceAnim = useState(new Animated.Value(1))[0];
   const [tapReactionText, setTapReactionText] = useState<string | null>(null);
 
-  // Breathing loop
-  useEffect(() => {
-    const breathing = Animated.loop(
-      Animated.sequence([
-        Animated.timing(breatheAnim, {
-          toValue: 1.04,
-          duration: 2200,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-        Animated.timing(breatheAnim, {
-          toValue: 1.0,
-          duration: 2200,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    breathing.start();
+  const getMascotExpression = (): BearExpression => {
+    switch (state) {
+      case 'proud_coach':
+      case 'approving_nod':
+        return 'proud_flex';
+      case 'chalking_up':
+        return 'chalking_up';
+      case 'waiting_watch':
+        return 'intense_lift';
+      case 'studying_journal':
+      default:
+        return 'idle_reading';
+    }
+  };
 
-    // Subtle chalk dust floating animation
-    const chalkLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(chalkDustAnim, {
-          toValue: 1,
-          duration: 3500,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(chalkDustAnim, {
-          toValue: 0,
-          duration: 3500,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    chalkLoop.start();
-
-    // Occasional blink timer
-    const blinkInterval = setInterval(() => {
-      Animated.sequence([
-        Animated.timing(blinkAnim, {
-          toValue: 0.1,
-          duration: 80,
-          useNativeDriver: true,
-        }),
-        Animated.timing(blinkAnim, {
-          toValue: 1,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }, 4500);
-
-    return () => {
-      breathing.stop();
-      chalkLoop.stop();
-      clearInterval(blinkInterval);
-    };
-  }, []);
+  const getMascotBadge = () => {
+    switch (state) {
+      case 'approving_nod':
+        return { text: 'APPROVED', bg: colors.success, color: '#FFFFFF' };
+      case 'chalking_up':
+        return { text: 'CHALKING UP', bg: '#6366F1', color: '#FFFFFF' };
+      case 'waiting_watch':
+        return { text: 'ON DECK', bg: colors.amber, color: colors.textInverted };
+      case 'proud_coach':
+        return { text: 'OVERLOAD HIT', bg: colors.amber, color: colors.textInverted };
+      case 'studying_journal':
+      default:
+        return { text: 'JOURNAL READY', bg: colors.surfaceElevated, color: colors.textSecondary };
+    }
+  };
 
   const handleMascotTap = () => {
     if (!interactive) return;
@@ -108,191 +70,92 @@ export const BrunoMascot: React.FC<BrunoMascotProps> = ({
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } catch (_) {}
 
-    // Bounce and ear wiggle
-    Animated.parallel([
-      Animated.sequence([
-        Animated.spring(bounceAnim, {
-          toValue: 1.15,
-          speed: 50,
-          bounciness: 12,
-          useNativeDriver: true,
-        }),
-        Animated.spring(bounceAnim, {
-          toValue: 1,
-          speed: 40,
-          bounciness: 6,
-          useNativeDriver: true,
-        }),
-      ]),
-      Animated.sequence([
-        Animated.timing(earWiggleAnim, {
-          toValue: 1,
-          duration: 120,
-          useNativeDriver: true,
-        }),
-        Animated.timing(earWiggleAnim, {
-          toValue: -1,
-          duration: 120,
-          useNativeDriver: true,
-        }),
-        Animated.timing(earWiggleAnim, {
-          toValue: 0,
-          duration: 120,
-          useNativeDriver: true,
-        }),
-      ]),
+    Animated.sequence([
+      Animated.spring(bounceAnim, {
+        toValue: 1.12,
+        speed: 50,
+        bounciness: 12,
+        useNativeDriver: true,
+      }),
+      Animated.spring(bounceAnim, {
+        toValue: 1,
+        speed: 40,
+        bounciness: 6,
+        useNativeDriver: true,
+      }),
     ]).start();
 
-    const quips = [
-      "Keep that chest up on the eccentric.",
-      "Check your grip. Dry hands lift big plates.",
-      "Two more reps left in the tank. Push through.",
-      "Consistency beats motivation every single time.",
-      "Lock it in. I'm taking notes.",
+    const coachAdvice = [
+      "Keep that chest up on the eccentric. Controlled descent builds muscle.",
+      "Check your grip. Dry hands lift heavy plates.",
+      "Two more reps left in reserve. Don't rush into technical failure.",
+      "Consistency beats motivation every single day of the week.",
+      "Lock it in. I am taking notes in the journal.",
     ];
-    const randomQuip = quips[Math.floor(Math.random() * quips.length)];
-    setTapReactionText(randomQuip);
+    setTapReactionText(coachAdvice[Math.floor(Math.random() * coachAdvice.length)]);
 
     setTimeout(() => {
       setTapReactionText(null);
-    }, 4000);
+    }, 4500);
   };
 
-  const getMascotDetails = () => {
-    switch (state) {
-      case 'approving_nod':
-        return {
-          faceEmoji: '🐻💪',
-          badgeText: 'APPROVED',
-          badgeBg: colors.success,
-          badgeColor: '#FFFFFF',
-          subtext: 'Solid technique. Target locked in notebook.',
-        };
-      case 'chalking_up':
-        return {
-          faceEmoji: '🐻☁️',
-          badgeText: 'CHALKING UP',
-          badgeBg: '#6366F1',
-          badgeColor: '#FFFFFF',
-          subtext: 'Get focused. Heavy compound work ahead.',
-        };
-      case 'waiting_watch':
-        return {
-          faceEmoji: '🐻⏱️',
-          badgeText: 'ON DECK',
-          badgeBg: colors.amber,
-          badgeColor: colors.textInverted,
-          subtext: 'Weights are racked. Time to execute.',
-        };
-      case 'proud_coach':
-        return {
-          faceEmoji: '🐻🏆',
-          badgeText: 'OVERLOAD HIT',
-          badgeBg: colors.amber,
-          badgeColor: colors.textInverted,
-          subtext: '+2.5kg / +5kg applied for next week.',
-        };
-      case 'studying_journal':
-      default:
-        return {
-          faceEmoji: '🐻📖',
-          badgeText: 'JOURNAL READY',
-          badgeBg: colors.surfaceElevated,
-          badgeColor: colors.textSecondary,
-          subtext: 'Optimizing fatigue & recovery metrics.',
-        };
-    }
-  };
-
-  const details = getMascotDetails();
-  const avatarSize = size === 'sm' ? 44 : size === 'lg' ? 76 : 58;
-
-  const earRotate = earWiggleAnim.interpolate({
-    inputRange: [-1, 0, 1],
-    outputRange: ['-12deg', '0deg', '12deg'],
-  });
-
-  const dustTranslateY = chalkDustAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -8],
-  });
-
-  const dustOpacity = chalkDustAnim.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [0.2, 0.6, 0.2],
-  });
+  const badge = getMascotBadge();
+  const expression = getMascotExpression();
+  const svgSize = size === 'sm' ? 72 : size === 'lg' ? 120 : 96;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
+    <View 
+      style={[
+        styles.container, 
+        { 
+          backgroundColor: colors.surfaceCard, 
+          borderColor: colors.border,
+          shadowColor: colors.cardShadow,
+        }
+      ]}
+    >
       
-      {/* Mascot Avatar Column */}
+      {/* Animated Bear Mascot Vector Avatar */}
       <TouchableOpacity 
-        activeOpacity={0.85}
+        activeOpacity={0.88}
         onPress={handleMascotTap}
-        style={styles.avatarWrapper}
+        style={styles.avatarTouchable}
       >
-        <Animated.View 
-          style={[
-            styles.avatarBadge,
-            {
-              width: avatarSize,
-              height: avatarSize,
-              borderRadius: avatarSize / 2,
-              backgroundColor: colors.surfaceSubtle,
-              borderColor: colors.borderHighlight,
-              transform: [
-                { scale: Animated.multiply(breatheAnim, bounceAnim) },
-                { rotate: earRotate }
-              ],
-            }
-          ]}
-        >
-          <Text style={{ fontSize: avatarSize * 0.52 }}>
-            {details.faceEmoji}
-          </Text>
-
-          {/* Animated Chalk Dust Effect */}
-          <Animated.View 
-            style={[
-              styles.chalkPuff,
-              {
-                opacity: dustOpacity,
-                transform: [{ translateY: dustTranslateY }],
-              }
-            ]}
-          >
-            <View style={[styles.chalkParticle, { backgroundColor: colors.textSecondary }]} />
-            <View style={[styles.chalkParticleSmall, { backgroundColor: colors.textMuted }]} />
-          </Animated.View>
+        <Animated.View style={{ transform: [{ scale: bounceAnim }] }}>
+          <BrunoCharacterSvg expression={expression} size={svgSize} animated={true} />
         </Animated.View>
-
-        {/* Small Touch Prompt */}
         <Text style={[styles.tapHint, { color: colors.textMuted }]}>
           Tap Bruno
         </Text>
       </TouchableOpacity>
 
-      {/* Speech Bubble / Chalk Note Column */}
-      <View style={styles.contentColumn}>
+      {/* Speech Note Column */}
+      <View style={styles.speechColumn}>
         <View style={styles.headerRow}>
-          <View style={styles.nameContainer}>
-            <Text style={[styles.mascotName, { color: colors.textPrimary }]}>
-              Bruno
+          <Text style={[styles.nameText, { color: colors.textPrimary }]}>
+            Bruno
+          </Text>
+          <View style={[styles.badgePill, { backgroundColor: badge.bg }]}>
+            <Text style={[styles.badgeText, { color: badge.color }]}>
+              {badge.text}
             </Text>
-            <View style={[styles.statePill, { backgroundColor: details.badgeBg }]}>
-              <Text style={[styles.statePillText, { color: details.badgeColor }]}>
-                {details.badgeText}
-              </Text>
-            </View>
           </View>
         </View>
 
-        {/* Speech Note Card with Chalked Edge */}
-        <View style={[styles.chalkBubble, { backgroundColor: colors.chalkNoteBg, borderColor: colors.chalkBorder }]}>
-          <Text style={[styles.chalkText, { color: colors.textPrimary }]}>
-            "{tapReactionText || message || details.subtext}"
+        {/* Vintage Chalk/Leather Speech Note */}
+        <View 
+          style={[
+            styles.speechBubble, 
+            { 
+              backgroundColor: colors.chalkNoteBg, 
+              borderColor: colors.chalkBorder,
+            }
+          ]}
+        >
+          <Text style={[styles.speechText, { color: colors.textPrimary }]}>
+            "{tapReactionText || message || "Routines are calibrated to your hardware. Execute with discipline."}"
           </Text>
-          <View style={[styles.speechPointer, { borderRightColor: colors.chalkNoteBg }]} />
+          <View style={[styles.pointer, { borderRightColor: colors.chalkNoteBg }]} />
         </View>
       </View>
 
@@ -305,58 +168,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 14,
-    borderRadius: 24,
+    borderRadius: 26,
     borderWidth: 1.2,
     marginVertical: 6,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
-    shadowRadius: 8,
+    shadowRadius: 10,
     elevation: 3,
   },
-  avatarWrapper: {
+  avatarTouchable: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14,
-  },
-  avatarBadge: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.8,
-    shadowColor: '#F59E0B',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    position: 'relative',
-  },
-  chalkPuff: {
-    position: 'absolute',
-    top: -4,
-    right: -2,
-    flexDirection: 'row',
-    gap: 3,
-  },
-  chalkParticle: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    opacity: 0.7,
-  },
-  chalkParticleSmall: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-    opacity: 0.5,
-    marginTop: 2,
+    marginRight: 10,
   },
   tapHint: {
     fontSize: 9,
-    fontWeight: '700',
-    marginTop: 4,
+    fontWeight: '800',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
+    marginTop: 2,
   },
-  contentColumn: {
+  speechColumn: {
     flex: 1,
     justifyContent: 'center',
   },
@@ -366,42 +198,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 6,
   },
-  nameContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  mascotName: {
-    fontSize: 14,
+  nameText: {
+    fontSize: 15,
     fontWeight: '900',
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
   },
-  statePill: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
+  badgePill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 6,
   },
-  statePillText: {
+  badgeText: {
     fontSize: 9,
     fontWeight: '900',
     letterSpacing: 0.6,
   },
-  chalkBubble: {
-    padding: 10,
-    borderRadius: 14,
+  speechBubble: {
+    padding: 12,
+    borderRadius: 16,
     borderWidth: 1,
     position: 'relative',
   },
-  chalkText: {
+  speechText: {
     fontSize: 12,
     fontWeight: '600',
     lineHeight: 17,
     fontStyle: 'italic',
   },
-  speechPointer: {
+  pointer: {
     position: 'absolute',
     left: -7,
-    top: 12,
+    top: 14,
     width: 0,
     height: 0,
     borderTopWidth: 5,
