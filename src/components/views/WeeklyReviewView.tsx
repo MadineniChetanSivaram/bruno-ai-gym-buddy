@@ -1,259 +1,293 @@
 // src/components/views/WeeklyReviewView.tsx
-// Feature 5: Weekly Tonnage Moved, Volume Breakdown by Muscle & Bruno's Verdict
+// Bruno's Official Weekly Verdict, Tonnage Analytics & Deload Monitor
 
 import React from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  StyleSheet 
-} from 'react-native';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { Trophy, TrendingUp, ShieldCheck, Flame, Dumbbell } from 'lucide-react-native';
 import { useBruno } from '../../context/BrunoContext';
-import { BrunoMascot } from '../mascot/BrunoMascot';
 
 export const WeeklyReviewView: React.FC = () => {
-  const { weeklyReview, mascotState, program } = useBruno();
+  const { weeklyReview, profile, colors } = useBruno();
 
-  if (!weeklyReview || !program) return null;
-
-  const currentWeek = program.currentWeek;
-  const muscleVolumes = Object.entries(weeklyReview.volumeByMuscle).filter(([_, sets]) => sets > 0);
-
-  return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.kicker}>FEATURE 5 • WEEKLY SUMMARY & CALIBRATION</Text>
-        <Text style={styles.title}>Weekly Review & Verdict</Text>
-        <Text style={styles.subtitle}>
-          Bruno analyzes your logged volume and fatigue to determine if progressive overload or a deload is required.
+  if (!weeklyReview) {
+    return (
+      <View style={[styles.centerContainer, { backgroundColor: colors.background }]}>
+        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+          Complete your first workout to generate Bruno's weekly verdict review.
         </Text>
       </View>
+    );
+  }
 
-      {/* Bruno's Verdict Card */}
-      <BrunoMascot 
-        state={weeklyReview.isDeloadTriggered ? 'waiting_watch' : 'proud_coach'}
-        message={weeklyReview.brunoVerdict}
-        size="md"
-      />
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-      {/* High-Level Stats Grid */}
-      <View style={styles.statsGrid}>
-        
-        {/* Total Weight Moved */}
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>TOTAL TONNAGE MOVED</Text>
-          <Text style={styles.statValue}>
-            {weeklyReview.totalTonnageMovedKg > 0 ? (weeklyReview.totalTonnageMovedKg / 1000).toFixed(1) + ' Tons' : '38.4 Tons'}
-          </Text>
-          <Text style={styles.statSub}>Cumulative mechanical load</Text>
-        </View>
+        {/* Bruno's Official Chalked Verdict Card */}
+        <View 
+          style={[
+            styles.verdictCard, 
+            { 
+              backgroundColor: colors.surfaceCard, 
+              borderColor: colors.amber,
+              shadowColor: colors.amberGlow,
+            }
+          ]}
+        >
+          <View style={styles.verdictHeader}>
+            <View style={styles.verdictHeaderLeft}>
+              <View style={[styles.bearIconCircle, { backgroundColor: colors.amberGlow }]}>
+                <Text style={{ fontSize: 24 }}>🐻📜</Text>
+              </View>
+              <View>
+                <Text style={[styles.verdictKicker, { color: colors.amber }]}>
+                  OFFICIAL NOTEBOOK VERDICT
+                </Text>
+                <Text style={[styles.verdictTitle, { color: colors.textPrimary }]}>
+                  Week {weeklyReview.weekNumber} Report Card
+                </Text>
+              </View>
+            </View>
 
-        {/* Consistency Adherence */}
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>ADHERENCE SCORE</Text>
-          <Text style={[styles.statValue, { color: '#10B981' }]}>
-            {weeklyReview.consistencyScore > 0 ? weeklyReview.consistencyScore : 100}%
-          </Text>
-          <Text style={styles.statSub}>Sessions logged on target</Text>
-        </View>
+            <View style={[styles.adherenceBadge, { backgroundColor: colors.successBg, borderColor: colors.success }]}>
+              <Text style={[styles.adherenceBadgeText, { color: colors.success }]}>
+                {weeklyReview.consistencyScore}% HIT
+              </Text>
+            </View>
+          </View>
 
-      </View>
-
-      {/* Auto-Deload Status Card */}
-      <View style={[styles.deloadCard, weeklyReview.isDeloadTriggered && styles.deloadCardTriggered]}>
-        <View style={styles.deloadHeader}>
-          <Text style={styles.deloadEmoji}>{weeklyReview.isDeloadTriggered ? '⚠️' : '🛡️'}</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.deloadTitle}>
-              {weeklyReview.isDeloadTriggered ? 'Auto-Deload Activated (Week 6)' : 'Deload Status: Optimal'}
-            </Text>
-            <Text style={styles.deloadDesc}>
-              {weeklyReview.isDeloadTriggered 
-                ? 'High fatigue detected. Next week reduces intensity by 30% to supercompensate connective tissue.'
-                : '3 weeks until scheduled deload. Continue progressive overload with +2.5kg / +5kg bumps.'}
+          {/* Bruno's Direct Tone Coach Review */}
+          <View style={[styles.quoteContainer, { backgroundColor: colors.chalkNoteBg, borderColor: colors.chalkBorder }]}>
+            <Text style={[styles.quoteText, { color: colors.textPrimary }]}>
+              "{weeklyReview.brunoVerdict}"
             </Text>
           </View>
         </View>
-      </View>
 
-      {/* Weekly Direct Volume Breakdown (10-16 Sets Target) */}
-      <Text style={styles.sectionTitle}>WEEKLY DIRECT VOLUME (OPTIMAL: 10–16 SETS)</Text>
-      <View style={styles.volumeCard}>
-        {muscleVolumes.length === 0 ? (
-          // Default demonstration sets
-          [
-            { muscle: 'Chest (Horizontal Push)', sets: 12, max: 16 },
-            { muscle: 'Back (Vertical / Horiz Pull)', sets: 14, max: 16 },
-            { muscle: 'Quads & Glutes (Squat / Lunge)', sets: 12, max: 16 },
-            { muscle: 'Hamstrings & Posterior Chain', sets: 10, max: 16 },
-            { muscle: 'Deltoids & Traps (Overhead / Fly)', sets: 12, max: 16 },
-            { muscle: 'Biceps & Triceps (Accessories)', sets: 10, max: 16 },
-          ].map((item, idx) => (
-            <View key={idx} style={styles.volumeRow}>
-              <View style={styles.volumeHeader}>
-                <Text style={styles.volumeMuscle}>{item.muscle}</Text>
-                <Text style={styles.volumeCount}>{item.sets} / {item.max} Sets</Text>
+        {/* Tonnage & Consistency Bento Grid */}
+        <View style={styles.bentoGrid}>
+          
+          {/* Total Tonnage Lifted */}
+          <View style={[styles.bentoCard, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
+            <View style={styles.bentoCardHeader}>
+              <Text style={[styles.bentoLabel, { color: colors.textMuted }]}>TOTAL TONNAGE</Text>
+              <Dumbbell size={14} color={colors.amber} />
+            </View>
+            <Text style={[styles.tonnageValue, { color: colors.textPrimary }]}>
+              {weeklyReview.totalTonnageMovedKg.toLocaleString()}{' '}
+              <Text style={[styles.tonnageUnit, { color: colors.amber }]}>{profile.unit}</Text>
+            </Text>
+            <View style={styles.tonnageMeta}>
+              <TrendingUp size={12} color={colors.success} />
+              <Text style={[styles.tonnageTrend, { color: colors.success }]}>
+                Progression on target
+              </Text>
+            </View>
+          </View>
+
+          {/* Adherence Streak */}
+          <View style={[styles.bentoCard, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
+            <View style={styles.bentoCardHeader}>
+              <Text style={[styles.bentoLabel, { color: colors.textMuted }]}>STREAK</Text>
+              <Flame size={14} color="#EF4444" />
+            </View>
+            <Text style={[styles.tonnageValue, { color: colors.textPrimary }]}>
+              {profile.currentStreakWeeks}{' '}
+              <Text style={[styles.tonnageUnit, { color: colors.textSecondary }]}>Weeks</Text>
+            </Text>
+            <View style={styles.tonnageMeta}>
+              <Text style={[styles.tonnageTrend, { color: colors.textSecondary }]}>
+                Zero missed sessions
+              </Text>
+            </View>
+          </View>
+
+        </View>
+
+        {/* Auto-Deload Detection & Recovery Card */}
+        <View 
+          style={[
+            styles.deloadCard, 
+            { 
+              backgroundColor: colors.surfaceCard, 
+              borderColor: weeklyReview.isDeloadTriggered ? colors.info : colors.border,
+            }
+          ]}
+        >
+          <View style={styles.deloadHeader}>
+            <View style={styles.deloadLeft}>
+              <View style={[styles.deloadIcon, { backgroundColor: colors.infoBg }]}>
+                <ShieldCheck size={18} color={colors.info} />
               </View>
-              <View style={styles.volumeBarBg}>
-                <View style={[styles.volumeBarFill, { width: `${(item.sets / item.max) * 100}%` }]} />
+              <View>
+                <Text style={[styles.deloadTitle, { color: colors.textPrimary }]}>
+                  Auto-Deload Detection
+                </Text>
+                <Text style={[styles.deloadSubtitle, { color: colors.textSecondary }]}>
+                  {weeklyReview.isDeloadTriggered 
+                    ? 'Deload recommended due to joint soreness signals or mesocycle completion.' 
+                    : 'Systemic fatigue is within baseline. Overload greenlit for next week.'}
+                </Text>
               </View>
             </View>
-          ))
-        ) : (
-          muscleVolumes.map(([muscle, sets]) => (
-            <View key={muscle} style={styles.volumeRow}>
-              <View style={styles.volumeHeader}>
-                <Text style={styles.volumeMuscle}>{muscle.toUpperCase()}</Text>
-                <Text style={styles.volumeCount}>{sets} Sets</Text>
-              </View>
-              <View style={styles.volumeBarBg}>
-                <View style={[styles.volumeBarFill, { width: `${Math.min(100, (sets / 16) * 100)}%` }]} />
-              </View>
-            </View>
-          ))
-        )}
-      </View>
+          </View>
+        </View>
 
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#090D16',
+  },
+  centerContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+  },
+  emptyText: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 22,
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 90,
+    paddingTop: 12,
+    paddingBottom: 110,
+    gap: 16,
   },
-  header: {
-    marginBottom: 16,
-  },
-  kicker: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#3B82F6',
-    letterSpacing: 0.8,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: '#F8FAFC',
-    marginTop: 2,
-  },
-  subtitle: {
-    fontSize: 12,
-    color: '#94A3B8',
-    lineHeight: 18,
-    marginTop: 4,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 16,
-    marginBottom: 16,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: '#0F172A',
-    borderRadius: 18,
+  verdictCard: {
+    borderRadius: 24,
     borderWidth: 1.5,
-    borderColor: '#1E293B',
-    padding: 16,
+    padding: 18,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
   },
-  statLabel: {
+  verdictHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  verdictHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  bearIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  verdictKicker: {
     fontSize: 9,
-    fontWeight: '800',
-    color: '#64748B',
+    fontWeight: '900',
+    letterSpacing: 0.6,
+  },
+  verdictTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: -0.2,
+  },
+  adherenceBadge: {
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  adherenceBadgeText: {
+    fontSize: 10,
+    fontWeight: '900',
     letterSpacing: 0.5,
   },
-  statValue: {
+  quoteContainer: {
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  quoteText: {
+    fontSize: 12,
+    lineHeight: 18,
+    fontStyle: 'italic',
+    fontWeight: '600',
+  },
+  bentoGrid: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  bentoCard: {
+    flex: 1,
+    borderRadius: 20,
+    borderWidth: 1.2,
+    padding: 16,
+  },
+  bentoCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  bentoLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+  },
+  tonnageValue: {
     fontSize: 22,
     fontWeight: '900',
-    color: '#60A5FA',
-    marginTop: 4,
+    letterSpacing: -0.5,
   },
-  statSub: {
+  tonnageUnit: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  tonnageMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 6,
+  },
+  tonnageTrend: {
     fontSize: 10,
-    color: '#94A3B8',
-    marginTop: 2,
+    fontWeight: '700',
   },
   deloadCard: {
-    backgroundColor: '#0F172A',
-    borderRadius: 18,
-    borderWidth: 1.5,
-    borderColor: '#1E293B',
+    borderRadius: 20,
+    borderWidth: 1.2,
     padding: 16,
-    marginBottom: 20,
-  },
-  deloadCardTriggered: {
-    borderColor: '#F59E0B',
-    backgroundColor: 'rgba(245, 158, 11, 0.08)',
   },
   deloadHeader: {
     flexDirection: 'row',
-    gap: 12,
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  deloadEmoji: {
-    fontSize: 24,
+  deloadLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  deloadIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   deloadTitle: {
     fontSize: 14,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontWeight: '900',
   },
-  deloadDesc: {
+  deloadSubtitle: {
     fontSize: 11,
-    color: '#94A3B8',
     lineHeight: 16,
     marginTop: 2,
-  },
-  sectionTitle: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#64748B',
-    letterSpacing: 0.8,
-    marginBottom: 10,
-  },
-  volumeCard: {
-    backgroundColor: '#0F172A',
-    borderRadius: 18,
-    borderWidth: 1.5,
-    borderColor: '#1E293B',
-    padding: 16,
-    gap: 14,
-  },
-  volumeRow: {
-    gap: 6,
-  },
-  volumeHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  volumeMuscle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#E2E8F0',
-  },
-  volumeCount: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#60A5FA',
-  },
-  volumeBarBg: {
-    height: 6,
-    backgroundColor: '#1E293B',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  volumeBarFill: {
-    height: '100%',
-    backgroundColor: '#3B82F6',
-    borderRadius: 3,
   },
 });

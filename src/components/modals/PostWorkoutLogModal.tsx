@@ -1,5 +1,5 @@
 // src/components/modals/PostWorkoutLogModal.tsx
-// 30-Second Frictionless Post-Workout Logging Modal with 1-Click "Hit Targets"
+// 30-Second Frictionless Post-Workout Logging with Dynamic Reactive Mascot & Overload Calculation
 
 import React, { useState } from 'react';
 import { 
@@ -8,9 +8,13 @@ import {
   Modal, 
   TouchableOpacity, 
   ScrollView, 
-  StyleSheet 
+  StyleSheet,
+  Animated 
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { Sparkles, ShieldAlert, Check, X } from 'lucide-react-native';
 import { useBruno } from '../../context/BrunoContext';
+import { TactileButton } from '../common/TactileButton';
 
 interface PostWorkoutLogModalProps {
   visible: boolean;
@@ -18,7 +22,7 @@ interface PostWorkoutLogModalProps {
 }
 
 export const PostWorkoutLogModal: React.FC<PostWorkoutLogModalProps> = ({ visible, onClose }) => {
-  const { todaySession, completeWorkout } = useBruno();
+  const { todaySession, completeWorkout, colors } = useBruno();
 
   const [rpe, setRpe] = useState<number>(8);
   const [soreness, setSoreness] = useState<'none' | 'mild' | 'moderate' | 'severe'>('none');
@@ -28,128 +32,253 @@ export const PostWorkoutLogModal: React.FC<PostWorkoutLogModalProps> = ({ visibl
 
   const handleQuickComplete = () => {
     setIsSubmitting(true);
+    try {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (_) {}
+
+    setTimeout(() => {
+      completeWorkout(todaySession.id, 8.0, 'none');
+      setIsSubmitting(false);
+      onClose();
+    }, 400);
+  };
+
+  const handleCustomComplete = () => {
+    setIsSubmitting(true);
+    try {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (_) {}
+
     setTimeout(() => {
       completeWorkout(todaySession.id, rpe, soreness);
       setIsSubmitting(false);
       onClose();
-    }, 600);
+    }, 400);
   };
+
+  const getRpeMascotFeedback = (val: number) => {
+    switch (val) {
+      case 6:
+        return { emoji: '🐻🤙', title: 'Light & Fresh', desc: '4+ reps left in reserve. Speed was crisp.' };
+      case 7:
+        return { emoji: '🐻💪', title: 'Moderate Effort', desc: '3 reps left in tank. Great velocity.' };
+      case 8:
+        return { emoji: '🐻🔥', title: 'Hypertrophy Goldilocks', desc: '2 reps in reserve. Perfect stimulus-to-fatigue ratio.' };
+      case 9:
+        return { emoji: '🐻⚡', title: 'Heavy Grind', desc: '1 rep before technical breakdown. High central fatigue.' };
+      case 10:
+      default:
+        return { emoji: '🐻💥', title: 'Maximal Effort', desc: 'Zero reps left. Auto-recovery monitoring activated.' };
+    }
+  };
+
+  const rpeFeedback = getRpeMascotFeedback(rpe);
 
   return (
     <Modal
       visible={visible}
+      transparent
       animationType="slide"
-      transparent={true}
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalSheet}>
+      <View style={styles.overlay}>
+        <View 
+          style={[
+            styles.sheetContainer, 
+            { 
+              backgroundColor: colors.surfaceCard, 
+              borderColor: colors.border,
+              shadowColor: colors.cardShadow,
+            }
+          ]}
+        >
           
-          <View style={styles.dragHandle} />
-
-          {/* Header */}
-          <View style={styles.headerRow}>
-            <View>
-              <Text style={styles.kicker}>30-SECOND COMPLETION LOG</Text>
-              <Text style={styles.title}>{todaySession.splitName}</Text>
+          {/* Sheet Header */}
+          <View style={[styles.sheetHeader, { borderBottomColor: colors.border }]}>
+            <View style={styles.sheetHeaderLeft}>
+              <View style={[styles.iconCircle, { backgroundColor: colors.amberGlow }]}>
+                <Sparkles size={18} color={colors.amber} />
+              </View>
+              <View>
+                <Text style={[styles.sheetPreTitle, { color: colors.amber }]}>
+                  30-SECOND FRICTIONLESS LOG
+                </Text>
+                <Text style={[styles.sheetTitle, { color: colors.textPrimary }]}>
+                  Lock Session & Overload
+                </Text>
+              </View>
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Text style={styles.closeBtnText}>✕</Text>
+
+            <TouchableOpacity 
+              onPress={onClose}
+              style={[styles.closeBtn, { backgroundColor: colors.surfaceSubtle }]}
+              activeOpacity={0.7}
+            >
+              <X size={16} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false}>
-
-            {/* 1-Click "Hit Prescribed Targets" (Hero CTA) */}
-            <TouchableOpacity 
-              activeOpacity={0.85}
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.sheetBody}>
+            
+            {/* 1-Tap Complete Hero Card */}
+            <TouchableOpacity
+              activeOpacity={0.88}
               onPress={handleQuickComplete}
               disabled={isSubmitting}
-              style={styles.heroCompleteBtn}
+              style={[
+                styles.oneClickCard, 
+                { 
+                  backgroundColor: colors.amber, 
+                  borderColor: colors.amberDark 
+                }
+              ]}
             >
-              <View style={styles.heroBtnContent}>
-                <Text style={styles.heroEmoji}>⚡</Text>
+              <View style={styles.oneClickContent}>
                 <View>
-                  <Text style={styles.heroBtnTitle}>Hit Prescribed Targets</Text>
-                  <Text style={styles.heroBtnSub}>1-Tap session completion • Log full sets & reps</Text>
+                  <View style={styles.fastTag}>
+                    <Text style={[styles.fastTagText, { color: colors.amberDark }]}>
+                      ⚡ FASTEST (RECOMMENDED)
+                    </Text>
+                  </View>
+                  <Text style={[styles.oneClickTitle, { color: colors.textInverted }]}>
+                    Hit All Prescribed Targets
+                  </Text>
+                  <Text style={[styles.oneClickSubtitle, { color: colors.textInverted }]}>
+                    Logs all sets at RPE 8.0 & auto-applies +2.5kg / +5kg overload
+                  </Text>
+                </View>
+                <View style={[styles.checkPill, { backgroundColor: colors.textInverted }]}>
+                  <Check size={18} color={colors.amber} strokeWidth={3} />
                 </View>
               </View>
-              <Text style={styles.heroChevron}>→</Text>
             </TouchableOpacity>
 
-            {/* Summary of Prescribed Sets */}
-            <View style={styles.summaryBox}>
-              <Text style={styles.summaryTitle}>SESSION MOVEMENTS LOGGED:</Text>
-              {todaySession.exercises.map((ex, idx) => (
-                <View key={ex.id} style={styles.summaryItem}>
-                  <Text style={styles.summaryIndex}>{idx + 1}.</Text>
-                  <Text style={styles.summaryExName}>{ex.name}</Text>
-                  <Text style={styles.summaryTargets}>{ex.targetSets} sets × {ex.targetReps} @ {ex.targetWeightKg}kg</Text>
+            <View style={styles.dividerRow}>
+              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+              <Text style={[styles.dividerText, { color: colors.textMuted }]}>
+                OR CALIBRATE METRICS
+              </Text>
+              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+            </View>
+
+            {/* Reactive Mascot RPE Rating Card */}
+            <View style={[styles.calibrateCard, { backgroundColor: colors.surfaceSubtle, borderColor: colors.border }]}>
+              <View style={styles.rpeHeader}>
+                <View style={styles.rpeMascotFace}>
+                  <Text style={{ fontSize: 28 }}>{rpeFeedback.emoji}</Text>
                 </View>
-              ))}
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={[styles.rpeFeedbackTitle, { color: colors.textPrimary }]}>
+                    RPE {rpe}.0 — {rpeFeedback.title}
+                  </Text>
+                  <Text style={[styles.rpeFeedbackDesc, { color: colors.textSecondary }]}>
+                    {rpeFeedback.desc}
+                  </Text>
+                </View>
+              </View>
+
+              {/* RPE Discrete Stepper Pills */}
+              <View style={styles.rpeButtonsRow}>
+                {[6, 7, 8, 9, 10].map((val) => {
+                  const isSelected = rpe === val;
+                  return (
+                    <TouchableOpacity
+                      key={val}
+                      onPress={() => {
+                        try {
+                          Haptics.selectionAsync();
+                        } catch (_) {}
+                        setRpe(val);
+                      }}
+                      style={[
+                        styles.rpeStepBtn,
+                        { backgroundColor: colors.surfaceCard, borderColor: colors.border },
+                        isSelected && { backgroundColor: colors.amber, borderColor: colors.amberDark }
+                      ]}
+                      activeOpacity={0.7}
+                    >
+                      <Text 
+                        style={[
+                          styles.rpeStepText, 
+                          { color: colors.textSecondary },
+                          isSelected && { color: colors.textInverted, fontWeight: '900' }
+                        ]}
+                      >
+                        {val}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
 
-            {/* Overall Session Effort (RPE) */}
-            <Text style={styles.sectionTitle}>SESSION EFFORT (RPE 6 - 10)</Text>
-            <Text style={styles.sectionSubtitle}>How close were you to absolute muscular failure?</Text>
-            <View style={styles.rpeRow}>
-              {[6, 7, 8, 9, 10].map(val => (
-                <TouchableOpacity
-                  key={val}
-                  onPress={() => setRpe(val)}
-                  style={[styles.rpePill, rpe === val && styles.rpePillActive]}
-                >
-                  <Text style={[styles.rpePillText, rpe === val && styles.rpePillTextActive]}>
-                    RPE {val}
-                  </Text>
-                  <Text style={[styles.rpePillSub, rpe === val && styles.rpePillSubActive]}>
-                    {val === 8 ? '2 in tank' : val === 9 ? '1 in tank' : val === 10 ? 'Max effort' : 'Moderate'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Joint Soreness & Fatigue */}
-            <Text style={[styles.sectionTitle, { marginTop: 20 }]}>JOINT SORENESS / TWEAKS</Text>
-            <Text style={styles.sectionSubtitle}>Any pain in shoulders, knees, or lower back today?</Text>
-            <View style={styles.sorenessRow}>
-              {[
-                { id: 'none', label: 'None 🟢', sub: 'Joints feel great' },
-                { id: 'mild', label: 'Mild 🟡', sub: 'Normal fatigue' },
-                { id: 'moderate', label: 'Moderate 🟠', sub: 'Watch closely' },
-                { id: 'severe', label: 'Severe 🔴', sub: 'Triggers Deload' },
-              ].map(item => (
-                <TouchableOpacity
-                  key={item.id}
-                  onPress={() => setSoreness(item.id as any)}
-                  style={[styles.sorenessPill, soreness === item.id && styles.sorenessPillActive]}
-                >
-                  <Text style={[styles.sorenessText, soreness === item.id && styles.sorenessTextActive]}>
-                    {item.label}
-                  </Text>
-                  <Text style={styles.sorenessSub}>{item.sub}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Bottom Overload Guarantee Note */}
-            <View style={styles.guaranteeCard}>
-              <Text style={styles.guaranteeTitle}>📓 BRUNO'S PROGRESSIVE CALIBRATION:</Text>
-              <Text style={styles.guaranteeText}>
-                Logging this session will automatically bump your compound lifts by +2.5 kg (upper) / +5 kg (lower) for next week.
+            {/* Joint Soreness Selector */}
+            <View style={[styles.calibrateCard, { backgroundColor: colors.surfaceSubtle, borderColor: colors.border }]}>
+              <View style={styles.sorenessTitleRow}>
+                <ShieldAlert size={14} color={soreness !== 'none' ? colors.danger : colors.textMuted} />
+                <Text style={[styles.sorenessLabel, { color: colors.textPrimary }]}>
+                  Joint Discomfort / Soreness
+                </Text>
+              </View>
+              <Text style={[styles.sorenessDesc, { color: colors.textMuted }]}>
+                Bruno triggers an automatic deload or movement swap if joint pain is logged.
               </Text>
+
+              <View style={styles.sorenessButtonsRow}>
+                {[
+                  { id: 'none', label: 'None' },
+                  { id: 'mild', label: 'Mild' },
+                  { id: 'moderate', label: 'Mod' },
+                  { id: 'severe', label: 'High' },
+                ].map((item) => {
+                  const isSelected = soreness === item.id;
+                  const isBad = item.id === 'moderate' || item.id === 'severe';
+
+                  return (
+                    <TouchableOpacity
+                      key={item.id}
+                      onPress={() => {
+                        try {
+                          Haptics.selectionAsync();
+                        } catch (_) {}
+                        setSoreness(item.id as any);
+                      }}
+                      style={[
+                        styles.sorenessBtn,
+                        { backgroundColor: colors.surfaceCard, borderColor: colors.border },
+                        isSelected && {
+                          backgroundColor: isBad ? colors.dangerBg : colors.amberGlow,
+                          borderColor: isBad ? colors.danger : colors.amber,
+                        }
+                      ]}
+                      activeOpacity={0.7}
+                    >
+                      <Text 
+                        style={[
+                          styles.sorenessBtnText,
+                          { color: colors.textSecondary },
+                          isSelected && {
+                            color: isBad ? colors.danger : colors.amber,
+                            fontWeight: '900',
+                          }
+                        ]}
+                      >
+                        {item.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
 
-            <TouchableOpacity 
-              activeOpacity={0.85}
-              onPress={handleQuickComplete}
-              disabled={isSubmitting}
-              style={styles.finalSubmitBtn}
-            >
-              <Text style={styles.finalSubmitText}>
-                {isSubmitting ? 'Calibrating Overload...' : 'Confirm & Calibrate Next Week →'}
-              </Text>
-            </TouchableOpacity>
+            {/* Confirm Custom Log Button */}
+            <TactileButton
+              onPress={handleCustomComplete}
+              variant="secondary"
+              title="Confirm Custom Log"
+              size="md"
+              style={{ marginTop: 6 }}
+            />
 
           </ScrollView>
 
@@ -160,239 +289,200 @@ export const PostWorkoutLogModal: React.FC<PostWorkoutLogModalProps> = ({ visibl
 };
 
 const styles = StyleSheet.create({
-  modalOverlay: {
+  overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: 'rgba(0, 0, 0, 0.72)',
     justifyContent: 'flex-end',
   },
-  modalSheet: {
-    backgroundColor: '#0F172A',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    borderWidth: 1,
-    borderColor: '#334155',
-    padding: 20,
-    maxHeight: '90%',
+  sheetContainer: {
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    borderWidth: 1.5,
+    borderBottomWidth: 0,
+    maxHeight: '88%',
+    paddingBottom: 28,
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 12,
   },
-  dragHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#475569',
-    alignSelf: 'center',
-    marginBottom: 16,
-  },
-  headerRow: {
+  sheetHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-  },
-  kicker: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#10B981',
-    letterSpacing: 0.8,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#F8FAFC',
-    marginTop: 2,
-  },
-  closeBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#1E293B',
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
   },
-  closeBtnText: {
-    color: '#94A3B8',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  heroCompleteBtn: {
-    backgroundColor: '#059669',
-    borderRadius: 18,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-    shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  heroBtnContent: {
+  sheetHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  heroEmoji: {
-    fontSize: 26,
-  },
-  heroBtnTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  heroBtnSub: {
-    fontSize: 11,
-    color: '#D1FAE5',
-    marginTop: 2,
-  },
-  heroChevron: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  summaryBox: {
-    backgroundColor: '#1E293B',
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 20,
-    gap: 8,
-  },
-  summaryTitle: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#94A3B8',
-    letterSpacing: 0.5,
-  },
-  summaryItem: {
-    flexDirection: 'row',
+  iconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'center',
   },
-  summaryIndex: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#60A5FA',
-    width: 16,
-  },
-  summaryExName: {
-    flex: 1,
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#F1F5F9',
-  },
-  summaryTargets: {
-    fontSize: 11,
-    color: '#94A3B8',
-  },
-  sectionTitle: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#94A3B8',
+  sheetPreTitle: {
+    fontSize: 9,
+    fontWeight: '900',
     letterSpacing: 0.8,
   },
-  sectionSubtitle: {
-    fontSize: 11,
-    color: '#64748B',
-    marginBottom: 10,
-    marginTop: 2,
+  sheetTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: -0.3,
   },
-  rpeRow: {
-    flexDirection: 'row',
-    gap: 6,
-    marginBottom: 16,
-  },
-  rpePill: {
-    flex: 1,
-    backgroundColor: '#1E293B',
-    borderWidth: 1.5,
-    borderColor: '#334155',
-    borderRadius: 12,
-    paddingVertical: 10,
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  rpePillActive: {
-    borderColor: '#3B82F6',
-    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+  sheetBody: {
+    padding: 20,
+    gap: 16,
   },
-  rpePillText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#CBD5E1',
-  },
-  rpePillTextActive: {
-    color: '#60A5FA',
-  },
-  rpePillSub: {
-    fontSize: 9,
-    color: '#64748B',
-    marginTop: 2,
-    textAlign: 'center',
-  },
-  rpePillSubActive: {
-    color: '#93C5FD',
-  },
-  sorenessRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 20,
-  },
-  sorenessPill: {
-    flex: 1,
-    minWidth: '45%',
-    backgroundColor: '#1E293B',
+  oneClickCard: {
+    borderRadius: 22,
     borderWidth: 1.5,
-    borderColor: '#334155',
-    borderRadius: 12,
-    padding: 10,
+    padding: 16,
+    shadowColor: '#F59E0B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22,
+    shadowRadius: 10,
+    elevation: 4,
   },
-  sorenessPillActive: {
-    borderColor: '#10B981',
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+  oneClickContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  sorenessText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#E2E8F0',
+  fastTag: {
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginBottom: 6,
   },
-  sorenessTextActive: {
-    color: '#34D399',
-  },
-  sorenessSub: {
-    fontSize: 10,
-    color: '#64748B',
-    marginTop: 2,
-  },
-  guaranteeCard: {
-    backgroundColor: '#0F172A',
-    borderWidth: 1,
-    borderColor: '#334155',
-    borderRadius: 14,
-    padding: 12,
-    marginBottom: 16,
-  },
-  guaranteeTitle: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#60A5FA',
+  fastTagText: {
+    fontSize: 9,
+    fontWeight: '900',
     letterSpacing: 0.5,
   },
-  guaranteeText: {
+  oneClickTitle: {
+    fontSize: 15,
+    fontWeight: '900',
+    letterSpacing: -0.2,
+  },
+  oneClickSubtitle: {
     fontSize: 11,
-    color: '#CBD5E1',
-    lineHeight: 16,
-    marginTop: 4,
+    fontWeight: '600',
+    opacity: 0.9,
+    marginTop: 2,
+    maxWidth: 240,
   },
-  finalSubmitBtn: {
-    backgroundColor: '#2563EB',
-    borderRadius: 16,
-    paddingVertical: 14,
+  checkPill: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
-    marginBottom: 24,
+    justifyContent: 'center',
   },
-  finalSubmitText: {
-    color: '#FFFFFF',
-    fontSize: 14,
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginVertical: 2,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    fontSize: 9,
     fontWeight: '800',
+    letterSpacing: 0.8,
+  },
+  calibrateCard: {
+    borderRadius: 18,
+    borderWidth: 1.2,
+    padding: 14,
+  },
+  rpeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  rpeMascotFace: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  rpeFeedbackTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  rpeFeedbackDesc: {
+    fontSize: 11,
+    fontWeight: '500',
+    lineHeight: 15,
+    marginTop: 2,
+  },
+  rpeButtonsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  rpeStepBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1.2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rpeStepText: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  sorenessTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 3,
+  },
+  sorenessLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  sorenessDesc: {
+    fontSize: 11,
+    lineHeight: 15,
+    marginBottom: 10,
+  },
+  sorenessButtonsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  sorenessBtn: {
+    flex: 1,
+    paddingVertical: 9,
+    borderRadius: 12,
+    borderWidth: 1.2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sorenessBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
 });

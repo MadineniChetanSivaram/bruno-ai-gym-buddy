@@ -1,317 +1,393 @@
 // src/components/views/GymProfileView.tsx
-// Feature 1: Gym Environment Profiles, Hardware Checklist & Injury Blacklist
+// Multi-Gym Hardware Switcher, Joint Protection Blacklist & Theme Mode Settings
 
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   View, 
   Text, 
   TouchableOpacity, 
   ScrollView, 
-  StyleSheet,
+  StyleSheet, 
   Alert 
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { 
+  Building2, 
+  ShieldAlert, 
+  Sun, 
+  Moon, 
+  RotateCcw, 
+  Check, 
+  Dumbbell 
+} from 'lucide-react-native';
 import { useBruno } from '../../context/BrunoContext';
 import { JointContraindication } from '../../types';
 
 export const GymProfileView: React.FC = () => {
-  const { profile, activeGym, switchGymProfile, resetApp } = useBruno();
+  const { 
+    profile, 
+    activeGym, 
+    switchGymProfile, 
+    resetApp, 
+    theme, 
+    colors, 
+    toggleTheme 
+  } = useBruno();
+
+  const handleToggleInjury = (joint: JointContraindication) => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (_) {}
+
+    const isCurrent = profile.injuryBlacklist.includes(joint);
+    const updated = isCurrent
+      ? profile.injuryBlacklist.filter(j => j !== joint)
+      : [...profile.injuryBlacklist, joint];
+
+    const updatedProfile = { ...profile, injuryBlacklist: updated };
+    // This switches / persists through switchGymProfile or context
+    switchGymProfile(profile.activeGymId);
+    profile.injuryBlacklist = updated;
+  };
+
+  const handleReset = () => {
+    try {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    } catch (_) {}
+    Alert.alert(
+      "Reset Bruno's Notebook?",
+      "This will reset your onboarding preferences and clear all logged session data.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Reset Everything", 
+          style: "destructive", 
+          onPress: () => resetApp() 
+        }
+      ]
+    );
+  };
+
+  const injuries: { id: JointContraindication; label: string; desc: string }[] = [
+    { id: 'lower_back', label: 'Lower Back', desc: 'Removes spinal loads (Deadlifts, Back Squats)' },
+    { id: 'shoulder', label: 'Shoulders', desc: 'Favors neutral grip presses & cables' },
+    { id: 'knee', label: 'Knees', desc: 'Substitutes high knee shear for hip hinges' },
+    { id: 'wrist', label: 'Wrists', desc: 'Neutral barbell & dumbbell grips only' },
+    { id: 'elbow', label: 'Elbows', desc: 'Replaces skullcrushers with cable pressdowns' },
+  ];
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.kicker}>FEATURE 1 • HARDWARE & CONSTRAINTS</Text>
-        <Text style={styles.title}>Gym Environments</Text>
-        <Text style={styles.subtitle}>
-          Switching your gym immediately adapts all upcoming workout prescriptions to matching equipment.
-        </Text>
-      </View>
-
-      {/* Active Gym Switcher */}
-      <Text style={styles.sectionTitle}>SELECT ACTIVE TRAINING ENVIRONMENT</Text>
-      <View style={styles.gymsList}>
-        {profile.gymEnvironments.map(gym => {
-          const isActive = gym.id === profile.activeGymId;
-          return (
-            <TouchableOpacity
-              key={gym.id}
-              activeOpacity={0.8}
-              onPress={() => switchGymProfile(gym.id)}
-              style={[styles.gymCard, isActive && styles.gymCardActive]}
-            >
-              <View style={styles.gymCardTop}>
-                <View style={{ flex: 1 }}>
-                  <View style={styles.nameRow}>
-                    <Text style={styles.gymEmoji}>{gym.type === 'commercial' ? '🏢' : gym.type === 'apartment' ? '🏙️' : '🏠'}</Text>
-                    <Text style={[styles.gymName, isActive && styles.gymNameActive]}>{gym.name}</Text>
-                  </View>
-                  <Text style={styles.gymTypeLabel}>
-                    Max DB: {gym.maxDumbbellWeightKg} kg • {gym.hasBarbellRack ? 'Full Barbell Rack' : 'No Barbell'}
-                  </Text>
-                </View>
-
-                {isActive ? (
-                  <View style={styles.activePill}>
-                    <Text style={styles.activePillText}>ACTIVE</Text>
-                  </View>
+        {/* Theme Mode Toggle Bento Card */}
+        <View style={[styles.sectionCard, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionHeaderLeft}>
+              <View style={[styles.sectionIconCircle, { backgroundColor: colors.amberGlow }]}>
+                {theme === 'dark' ? (
+                  <Moon size={16} color={colors.amber} />
                 ) : (
-                  <Text style={styles.switchLink}>Switch →</Text>
+                  <Sun size={16} color={colors.amber} />
                 )}
               </View>
-
-              {/* Hardware Checklist Tags */}
-              <View style={styles.tagsRow}>
-                <View style={[styles.tag, gym.hasBarbellRack ? styles.tagOn : styles.tagOff]}>
-                  <Text style={styles.tagText}>Barbell Rack {gym.hasBarbellRack ? '✓' : '✕'}</Text>
-                </View>
-                <View style={[styles.tag, gym.hasCableStack ? styles.tagOn : styles.tagOff]}>
-                  <Text style={styles.tagText}>Cable Stack {gym.hasCableStack ? '✓' : '✕'}</Text>
-                </View>
-                <View style={[styles.tag, gym.hasSmithMachine ? styles.tagOn : styles.tagOff]}>
-                  <Text style={styles.tagText}>Smith Machine {gym.hasSmithMachine ? '✓' : '✕'}</Text>
-                </View>
-                <View style={[styles.tag, gym.hasPullUpBar ? styles.tagOn : styles.tagOff]}>
-                  <Text style={styles.tagText}>Pull-Up Bar {gym.hasPullUpBar ? '✓' : '✕'}</Text>
-                </View>
+              <View>
+                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+                  Appearance Mode
+                </Text>
+                <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
+                  {theme === 'dark' ? 'Obsidian Dark (Powerlifting Den)' : 'Chalk Light (Clean Crisp Paper)'}
+                </Text>
               </View>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      {/* Active Injury Blacklist */}
-      <Text style={[styles.sectionTitle, { marginTop: 24 }]}>ACTIVE JOINT BLACKLIST</Text>
-      <View style={styles.blacklistCard}>
-        {profile.injuryBlacklist.length === 0 ? (
-          <Text style={styles.noInjuriesText}>No joint restrictions logged. Full exercise library unlocked.</Text>
-        ) : (
-          profile.injuryBlacklist.map(injury => (
-            <View key={injury} style={styles.injuryBadge}>
-              <Text style={styles.injuryBadgeText}>🛡️ {injury.replace('_', ' ').toUpperCase()} PROTECTED</Text>
             </View>
-          ))
-        )}
-      </View>
 
-      {/* Schedule Budget Info */}
-      <Text style={[styles.sectionTitle, { marginTop: 24 }]}>SCHEDULE BUDGET</Text>
-      <View style={styles.scheduleCard}>
-        <View style={styles.scheduleRow}>
-          <Text style={styles.scheduleLabel}>Frequency:</Text>
-          <Text style={styles.scheduleVal}>{profile.daysPerWeek} Days / Week</Text>
+            <TouchableOpacity 
+              onPress={toggleTheme}
+              style={[styles.themePillBtn, { backgroundColor: colors.surfaceSubtle, borderColor: colors.border }]}
+              activeOpacity={0.7}
+            >
+              {theme === 'dark' ? (
+                <>
+                  <Sun size={14} color={colors.amber} />
+                  <Text style={[styles.themePillText, { color: colors.textPrimary }]}>Switch to Light</Text>
+                </>
+              ) : (
+                <>
+                  <Moon size={14} color={colors.amber} />
+                  <Text style={[styles.themePillText, { color: colors.textPrimary }]}>Switch to Dark</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
-        <View style={styles.scheduleRow}>
-          <Text style={styles.scheduleLabel}>Session Budget:</Text>
-          <Text style={styles.scheduleVal}>{profile.sessionDurationMinutes} Minutes</Text>
-        </View>
-        <View style={styles.scheduleRow}>
-          <Text style={styles.scheduleLabel}>Units:</Text>
-          <Text style={styles.scheduleVal}>{profile.unit.toUpperCase()}</Text>
-        </View>
-      </View>
 
-      {/* Reset Flow Button */}
-      <TouchableOpacity 
-        onPress={() => {
-          Alert.alert(
-            'Reset Bruno?',
-            'This will clear current progress and re-launch onboarding.',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Reset', style: 'destructive', onPress: resetApp }
-            ]
-          );
-        }}
-        style={styles.resetBtn}
-      >
-        <Text style={styles.resetBtnText}>Restart Onboarding & Program Setup</Text>
-      </TouchableOpacity>
+        {/* Multi-Gym Hardware Switcher */}
+        <View style={[styles.sectionCard, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionHeaderLeft}>
+              <View style={[styles.sectionIconCircle, { backgroundColor: colors.amberGlow }]}>
+                <Building2 size={16} color={colors.amber} />
+              </View>
+              <View>
+                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+                  Active Gym Environment
+                </Text>
+                <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
+                  Routines calibrate to dumbbell limits & equipment availability
+                </Text>
+              </View>
+            </View>
+          </View>
 
-    </ScrollView>
+          <View style={styles.gymList}>
+            {profile.gymEnvironments.map((gym) => {
+              const isActive = gym.id === activeGym.id;
+
+              return (
+                <TouchableOpacity
+                  key={gym.id}
+                  onPress={() => switchGymProfile(gym.id)}
+                  style={[
+                    styles.gymItemCard,
+                    { backgroundColor: colors.surfaceSubtle, borderColor: colors.border },
+                    isActive && { backgroundColor: colors.amberGlow, borderColor: colors.amber }
+                  ]}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.gymItemTop}>
+                    <View style={styles.gymItemLeft}>
+                      <Text style={{ fontSize: 22 }}>
+                        {gym.type === 'commercial' ? '🏛️' : gym.type === 'apartment' ? '🏢' : '🏠'}
+                      </Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.gymName, { color: colors.textPrimary }]}>
+                          {gym.name}
+                        </Text>
+                        <Text style={[styles.gymSpecs, { color: colors.textMuted }]}>
+                          Max DB: {gym.maxDumbbellWeightKg}kg • {gym.hasBarbellRack ? 'Barbell Rack' : 'No Barbell'} • {gym.hasCableStack ? 'Cables Available' : 'No Cables'}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {isActive && (
+                      <View style={[styles.activeCheckPill, { backgroundColor: colors.amber }]}>
+                        <Check size={14} color={colors.textInverted} strokeWidth={3} />
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Joint Injury Blacklist Manager */}
+        <View style={[styles.sectionCard, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionHeaderLeft}>
+              <View style={[styles.sectionIconCircle, { backgroundColor: colors.dangerBg }]}>
+                <ShieldAlert size={16} color={colors.danger} />
+              </View>
+              <View>
+                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+                  Joint Injury Blacklist
+                </Text>
+                <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
+                  Toggle joints you want Bruno to protect with safe alternatives
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.injuryList}>
+            {injuries.map((injury) => {
+              const isGuarded = profile.injuryBlacklist.includes(injury.id);
+
+              return (
+                <TouchableOpacity
+                  key={injury.id}
+                  onPress={() => handleToggleInjury(injury.id)}
+                  style={[
+                    styles.injuryItem,
+                    { backgroundColor: colors.surfaceSubtle, borderColor: colors.border },
+                    isGuarded && { backgroundColor: colors.dangerBg, borderColor: colors.danger }
+                  ]}
+                  activeOpacity={0.75}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.injuryLabel, { color: isGuarded ? colors.danger : colors.textPrimary }]}>
+                      {injury.label} {isGuarded ? '🛡️ Guarded' : ''}
+                    </Text>
+                    <Text style={[styles.injuryDesc, { color: colors.textMuted }]}>
+                      {injury.desc}
+                    </Text>
+                  </View>
+
+                  <View 
+                    style={[
+                      styles.toggleIndicator, 
+                      { borderColor: colors.borderStrong },
+                      isGuarded && { backgroundColor: colors.danger, borderColor: colors.danger }
+                    ]}
+                  >
+                    {isGuarded && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Reset / Onboarding Repeat */}
+        <TouchableOpacity
+          onPress={handleReset}
+          style={[styles.resetButton, { backgroundColor: colors.surfaceSubtle, borderColor: colors.border }]}
+          activeOpacity={0.7}
+        >
+          <RotateCcw size={15} color={colors.textSecondary} />
+          <Text style={[styles.resetButtonText, { color: colors.textSecondary }]}>
+            Reset Bruno's Notebook & Re-Run Onboarding
+          </Text>
+        </TouchableOpacity>
+
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#090D16',
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 90,
+    paddingTop: 12,
+    paddingBottom: 110,
+    gap: 16,
   },
-  header: {
-    marginBottom: 20,
+  sectionCard: {
+    borderRadius: 22,
+    borderWidth: 1.2,
+    padding: 16,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  kicker: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#3B82F6',
-    letterSpacing: 0.8,
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
   },
-  title: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: '#F8FAFC',
-    marginTop: 2,
+  sectionHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
   },
-  subtitle: {
-    fontSize: 12,
-    color: '#94A3B8',
-    lineHeight: 18,
-    marginTop: 4,
+  sectionIconCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sectionTitle: {
+    fontSize: 15,
+    fontWeight: '900',
+    letterSpacing: -0.2,
+  },
+  sectionSubtitle: {
     fontSize: 11,
-    fontWeight: '800',
-    color: '#64748B',
-    letterSpacing: 0.8,
-    marginBottom: 10,
+    marginTop: 2,
   },
-  gymsList: {
-    gap: 12,
-  },
-  gymCard: {
-    backgroundColor: '#0F172A',
-    borderRadius: 18,
-    borderWidth: 1.5,
-    borderColor: '#1E293B',
-    padding: 16,
-  },
-  gymCardActive: {
-    borderColor: '#3B82F6',
-    backgroundColor: 'rgba(59, 130, 246, 0.08)',
-  },
-  gymCardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  nameRow: {
+  themePillBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-  },
-  gymEmoji: {
-    fontSize: 20,
-  },
-  gymName: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  gymNameActive: {
-    color: '#60A5FA',
-  },
-  gymTypeLabel: {
-    fontSize: 11,
-    color: '#94A3B8',
-    marginTop: 3,
-  },
-  activePill: {
-    backgroundColor: '#2563EB',
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  activePillText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '900',
-  },
-  switchLink: {
-    color: '#3B82F6',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  tagsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 6,
-    marginTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#1E293B',
-    paddingTop: 10,
-  },
-  tag: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    borderWidth: 1,
-  },
-  tagOn: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    borderColor: 'rgba(16, 185, 129, 0.3)',
-  },
-  tagOff: {
-    backgroundColor: 'rgba(100, 116, 139, 0.1)',
-    borderColor: 'rgba(100, 116, 139, 0.2)',
-  },
-  tagText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#CBD5E1',
-  },
-  blacklistCard: {
-    backgroundColor: '#0F172A',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#1E293B',
-    padding: 14,
-    gap: 8,
-  },
-  noInjuriesText: {
-    fontSize: 12,
-    color: '#94A3B8',
-    fontStyle: 'italic',
-  },
-  injuryBadge: {
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.3)',
-    borderRadius: 8,
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 7,
+    borderRadius: 12,
+    borderWidth: 1,
   },
-  injuryBadgeText: {
-    color: '#FCA5A5',
+  themePillText: {
     fontSize: 11,
     fontWeight: '800',
   },
-  scheduleCard: {
-    backgroundColor: '#0F172A',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#1E293B',
-    padding: 14,
+  gymList: {
     gap: 10,
   },
-  scheduleRow: {
+  gymItemCard: {
+    borderRadius: 16,
+    borderWidth: 1.2,
+    padding: 12,
+  },
+  gymItemTop: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
   },
-  scheduleLabel: {
-    fontSize: 12,
-    color: '#94A3B8',
-  },
-  scheduleVal: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#F1F5F9',
-  },
-  resetBtn: {
-    marginTop: 28,
-    paddingVertical: 14,
-    borderRadius: 14,
-    backgroundColor: '#1E293B',
+  gymItemLeft: {
+    flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#334155',
+    gap: 10,
+    flex: 1,
   },
-  resetBtnText: {
-    color: '#EF4444',
+  gymName: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  gymSpecs: {
+    fontSize: 10,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  activeCheckPill: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  injuryList: {
+    gap: 8,
+  },
+  injuryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1.2,
+  },
+  injuryLabel: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  injuryDesc: {
+    fontSize: 10,
+    marginTop: 2,
+  },
+  toggleIndicator: {
+    width: 22,
+    height: 22,
+    borderRadius: 7,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resetButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 16,
+    borderWidth: 1.2,
+    marginTop: 4,
+  },
+  resetButtonText: {
     fontSize: 12,
     fontWeight: '700',
   },

@@ -1,5 +1,5 @@
 // src/components/views/TodayWorkoutView.tsx
-// Today's Workout View with Bruno's Pre-Session Briefing & 1-Tap Machine Swaps
+// Today's Workout View with Impeccable Bento UI, Micro-interactions & 1-Tap Machine Swaps
 
 import React, { useState } from 'react';
 import { 
@@ -7,13 +7,17 @@ import {
   Text, 
   TouchableOpacity, 
   ScrollView, 
-  StyleSheet 
+  StyleSheet, 
+  Animated 
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { Sparkles, RefreshCw, CheckCircle2, Circle, Flame, Clock, Layers } from 'lucide-react-native';
 import { useBruno } from '../../context/BrunoContext';
 import { BrunoMascot } from '../mascot/BrunoMascot';
 import { BrunoEngine } from '../../services/brunoEngine';
 import { PostWorkoutLogModal } from '../modals/PostWorkoutLogModal';
 import { MachineSwapModal } from '../modals/MachineSwapModal';
+import { TactileButton } from '../common/TactileButton';
 
 export const TodayWorkoutView: React.FC = () => {
   const { 
@@ -22,132 +26,265 @@ export const TodayWorkoutView: React.FC = () => {
     todaySession, 
     mascotState, 
     openSwapModal,
-    setActiveTab 
+    setActiveTab,
+    colors,
   } = useBruno();
 
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+  const [completedExerciseIds, setCompletedExerciseIds] = useState<string[]>([]);
 
   if (!todaySession) {
     return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.emptyText}>No workout scheduled. Rest and recover, lifter.</Text>
+      <View style={[styles.centerContainer, { backgroundColor: colors.background }]}>
+        <Text style={{ fontSize: 44, marginBottom: 12 }}>🐻💤</Text>
+        <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Rest & Recovery Day</Text>
+        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+          Bruno says: "Muscle fibers rebuild outside the gym. Drink your water, hit your protein goals, and let connective tissues recover."
+        </Text>
       </View>
     );
   }
 
+  const toggleExerciseCheck = (exerciseId: string) => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (_) {}
+
+    if (completedExerciseIds.includes(exerciseId)) {
+      setCompletedExerciseIds(completedExerciseIds.filter(id => id !== exerciseId));
+    } else {
+      setCompletedExerciseIds([...completedExerciseIds, exerciseId]);
+    }
+  };
+
   const preSessionNote = BrunoEngine.getPreSessionBriefing(todaySession, profile);
 
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent} 
+        showsVerticalScrollIndicator={false}
+      >
 
-        {/* Top Mascot Briefing Box */}
+        {/* Animated Bruno Chalk Briefing */}
         <BrunoMascot 
           state={mascotState} 
           message={preSessionNote}
           size="md"
         />
 
-        {/* Workout Info Bar */}
-        <View style={styles.sessionHeaderCard}>
+        {/* Bento Session Header Card */}
+        <View 
+          style={[
+            styles.sessionHeaderCard, 
+            { 
+              backgroundColor: colors.surfaceCard, 
+              borderColor: colors.border,
+              shadowColor: colors.cardShadow,
+            }
+          ]}
+        >
           <View style={styles.sessionMetaRow}>
-            <View style={styles.weekBadge}>
-              <Text style={styles.weekBadgeText}>WEEK {todaySession.weekNumber} • DAY {todaySession.dayNumber}</Text>
+            <View style={[styles.weekBadge, { backgroundColor: colors.infoBg, borderColor: colors.info }]}>
+              <Text style={[styles.weekBadgeText, { color: colors.info }]}>
+                BLOCK 1 • WEEK {todaySession.weekNumber}
+              </Text>
             </View>
-            <TouchableOpacity onPress={() => setActiveTab('profile')} style={styles.gymTag}>
-              <Text style={styles.gymTagText}>📍 {activeGym.name} ▾</Text>
+
+            <TouchableOpacity 
+              onPress={() => setActiveTab('profile')} 
+              style={[styles.gymTag, { backgroundColor: colors.surfaceSubtle, borderColor: colors.border }]}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.gymTagText, { color: colors.amber }]}>
+                🏛️ {activeGym.name} ▾
+              </Text>
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.sessionTitle}>{todaySession.splitName}</Text>
-          <View style={styles.sessionDetailsRow}>
-            <Text style={styles.sessionDetailItem}>⏱️ ~{todaySession.estimatedDurationMin} Mins</Text>
-            <Text style={styles.sessionDetailDot}>•</Text>
-            <Text style={styles.sessionDetailItem}>🏋️ {todaySession.exercises.length} Exercises</Text>
-            <Text style={styles.sessionDetailDot}>•</Text>
-            <Text style={styles.sessionDetailItem}>🎯 RPE 8 Target</Text>
+          <Text style={[styles.sessionTitle, { color: colors.textPrimary }]}>
+            {todaySession.splitName}
+          </Text>
+
+          {/* Quick Stats Bento Row */}
+          <View style={styles.statsRow}>
+            <View style={[styles.statChip, { backgroundColor: colors.surfaceSubtle }]}>
+              <Clock size={13} color={colors.amber} />
+              <Text style={[styles.statChipText, { color: colors.textSecondary }]}>
+                {todaySession.estimatedDurationMin} Mins
+              </Text>
+            </View>
+
+            <View style={[styles.statChip, { backgroundColor: colors.surfaceSubtle }]}>
+              <Layers size={13} color={colors.info} />
+              <Text style={[styles.statChipText, { color: colors.textSecondary }]}>
+                {todaySession.exercises.length} Exercises
+              </Text>
+            </View>
+
+            <View style={[styles.statChip, { backgroundColor: colors.surfaceSubtle }]}>
+              <Flame size={13} color={colors.success} />
+              <Text style={[styles.statChipText, { color: colors.textSecondary }]}>
+                RPE 8.0 Target
+              </Text>
+            </View>
           </View>
         </View>
 
-        {/* Section Title */}
+        {/* Section Header */}
         <View style={styles.sectionTitleRow}>
-          <Text style={styles.sectionTitle}>PRESCRIBED EXERCISE TARGETS</Text>
-          <Text style={styles.sectionSubtitle}>No mid-session logging needed</Text>
+          <View>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+              Prescribed Targets
+            </Text>
+            <Text style={[styles.sectionSubtitle, { color: colors.textMuted }]}>
+              Pre-calculated weights & sets • 1-tap machine swap if busy
+            </Text>
+          </View>
         </View>
 
         {/* Prescribed Exercises Cards */}
         <View style={styles.exerciseList}>
-          {todaySession.exercises.map((exercise, index) => (
-            <View key={exercise.id} style={styles.exerciseCard}>
-              
-              {/* Exercise Header */}
-              <View style={styles.exerciseCardHeader}>
-                <View style={styles.indexCircle}>
-                  <Text style={styles.indexNumber}>{index + 1}</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.exerciseName}>{exercise.name}</Text>
-                  <Text style={styles.exerciseMuscle}>
-                    {exercise.primaryMuscle.toUpperCase()} • {exercise.movementPattern.replace('_', ' ').toUpperCase()}
-                  </Text>
+          {todaySession.exercises.map((exercise, index) => {
+            const isChecked = completedExerciseIds.includes(exercise.id);
+
+            return (
+              <View 
+                key={exercise.id} 
+                style={[
+                  styles.exerciseCard,
+                  { 
+                    backgroundColor: colors.surfaceCard, 
+                    borderColor: isChecked ? colors.success : colors.border,
+                    shadowColor: colors.cardShadow,
+                  },
+                  isChecked && { backgroundColor: colors.successBg }
+                ]}
+              >
+                
+                {/* Exercise Header Row */}
+                <View style={styles.exerciseCardHeader}>
+                  <TouchableOpacity 
+                    onPress={() => toggleExerciseCheck(exercise.id)}
+                    style={styles.checkCircleBtn}
+                    activeOpacity={0.7}
+                  >
+                    {isChecked ? (
+                      <CheckCircle2 size={24} color={colors.success} fill={colors.successBg} />
+                    ) : (
+                      <Circle size={24} color={colors.borderStrong} />
+                    )}
+                  </TouchableOpacity>
+
+                  <View style={{ flex: 1, paddingRight: 6 }}>
+                    <Text 
+                      style={[
+                        styles.exerciseName, 
+                        { color: colors.textPrimary },
+                        isChecked && styles.strikethroughText
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {exercise.name}
+                    </Text>
+                    <Text style={[styles.exerciseMuscle, { color: colors.textMuted }]}>
+                      {exercise.primaryMuscle.toUpperCase()} • {exercise.movementPattern.replace('_', ' ').toUpperCase()}
+                    </Text>
+                  </View>
+
+                  {/* 1-Tap Machine Busy Swap Button */}
+                  <TouchableOpacity 
+                    activeOpacity={0.75}
+                    onPress={() => openSwapModal(exercise)}
+                    style={[styles.machineBusyBtn, { backgroundColor: colors.amberGlow, borderColor: colors.amber }]}
+                  >
+                    <RefreshCw size={12} color={colors.amber} />
+                    <Text style={[styles.machineBusyText, { color: colors.amber }]}>Busy?</Text>
+                  </TouchableOpacity>
                 </View>
 
-                {/* 1-Tap Machine Busy Swap Button */}
-                <TouchableOpacity 
-                  activeOpacity={0.7}
-                  onPress={() => openSwapModal(exercise)}
-                  style={styles.machineBusyBtn}
-                >
-                  <Text style={styles.machineBusyText}>Busy? ⚡</Text>
-                </TouchableOpacity>
+                {/* Targets Bento Row */}
+                <View style={[styles.targetsRow, { backgroundColor: colors.surfaceSubtle }]}>
+                  <View style={styles.targetPill}>
+                    <Text style={[styles.targetPillLabel, { color: colors.textMuted }]}>SETS</Text>
+                    <Text style={[styles.targetPillValue, { color: colors.textPrimary }]}>
+                      {exercise.targetSets}
+                    </Text>
+                  </View>
+
+                  <View style={styles.targetDivider} />
+
+                  <View style={styles.targetPill}>
+                    <Text style={[styles.targetPillLabel, { color: colors.textMuted }]}>REPS</Text>
+                    <Text style={[styles.targetPillValue, { color: colors.textPrimary }]}>
+                      {exercise.targetReps}
+                    </Text>
+                  </View>
+
+                  <View style={styles.targetDivider} />
+
+                  <View style={styles.targetPill}>
+                    <Text style={[styles.targetPillLabel, { color: colors.textMuted }]}>LOAD</Text>
+                    <Text style={[styles.targetPillValueWeight, { color: colors.amber }]}>
+                      {exercise.targetWeightKg} {profile.unit}
+                    </Text>
+                  </View>
+
+                  <View style={styles.targetDivider} />
+
+                  <View style={styles.targetPill}>
+                    <Text style={[styles.targetPillLabel, { color: colors.textMuted }]}>TARGET RPE</Text>
+                    <Text style={[styles.targetPillValue, { color: colors.textPrimary }]}>
+                      @{exercise.targetRpe}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Overload Rule & Biomechanical Cue */}
+                <View style={styles.bottomMetaRow}>
+                  <View style={[styles.cueBox, { backgroundColor: colors.chalkNoteBg, borderColor: colors.chalkBorder }]}>
+                    <Text style={[styles.cueText, { color: colors.textSecondary }]}>
+                      💡 {exercise.cueNote}
+                    </Text>
+                  </View>
+
+                  <View style={styles.overloadTag}>
+                    <Sparkles size={11} color={colors.success} />
+                    <Text style={[styles.overloadTagText, { color: colors.success }]}>
+                      +2.5 kg next block if reps hit
+                    </Text>
+                  </View>
+                </View>
+
               </View>
-
-              {/* Targets Pill Bar */}
-              <View style={styles.targetsRow}>
-                <View style={styles.targetPill}>
-                  <Text style={styles.targetPillLabel}>SETS</Text>
-                  <Text style={styles.targetPillValue}>{exercise.targetSets}</Text>
-                </View>
-                <View style={styles.targetPill}>
-                  <Text style={styles.targetPillLabel}>REPS</Text>
-                  <Text style={styles.targetPillValue}>{exercise.targetReps}</Text>
-                </View>
-                <View style={[styles.targetPill, styles.targetPillWeight]}>
-                  <Text style={styles.targetPillLabel}>LOAD</Text>
-                  <Text style={styles.targetPillValueWeight}>
-                    {exercise.targetWeightKg} {profile.unit}
-                  </Text>
-                </View>
-                <View style={styles.targetPill}>
-                  <Text style={styles.targetPillLabel}>INTENSITY</Text>
-                  <Text style={styles.targetPillValue}>RPE {exercise.targetRpe}</Text>
-                </View>
-              </View>
-
-              {/* Biomechanical Cue / Form Note */}
-              <View style={styles.cueBox}>
-                <Text style={styles.cueText}>💡 {exercise.cueNote}</Text>
-              </View>
-
-            </View>
-          ))}
+            );
+          })}
         </View>
 
-        {/* Post-Workout Log CTA */}
-        <TouchableOpacity 
-          activeOpacity={0.85}
-          onPress={() => setIsLogModalOpen(true)}
-          style={styles.completeSessionBtn}
-        >
-          <View style={styles.completeBtnContent}>
-            <Text style={styles.completeBtnEmoji}>⚡</Text>
-            <View>
-              <Text style={styles.completeBtnTitle}>Complete Workout (30s Log)</Text>
-              <Text style={styles.completeBtnSub}>Lock reps & trigger automated weight overload</Text>
+        {/* 30-Second Fast Log CTA */}
+        <View style={styles.ctaWrapper}>
+          <TactileButton
+            onPress={() => setIsLogModalOpen(true)}
+            size="lg"
+            variant="primary"
+            style={styles.logButton}
+          >
+            <View style={styles.ctaContent}>
+              <View style={styles.ctaLeft}>
+                <Text style={[styles.ctaEmoji]}>⚡</Text>
+                <View>
+                  <Text style={[styles.ctaTitle, { color: colors.textInverted }]}>
+                    Log Workout (30s Frictionless)
+                  </Text>
+                  <Text style={[styles.ctaSub, { color: colors.textInverted }]}>
+                    1-click target confirmation & auto-overload calculation
+                  </Text>
+                </View>
+              </View>
+              <Text style={[styles.ctaArrow, { color: colors.textInverted }]}>→</Text>
             </View>
-          </View>
-          <Text style={styles.completeBtnArrow}>→</Text>
-        </TouchableOpacity>
+          </TactileButton>
+        </View>
 
       </ScrollView>
 
@@ -166,240 +303,243 @@ export const TodayWorkoutView: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#090D16',
   },
   centerContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
+    padding: 32,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    marginBottom: 8,
   },
   emptyText: {
-    color: '#94A3B8',
     fontSize: 14,
     textAlign: 'center',
+    lineHeight: 22,
   },
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: 90,
+    paddingBottom: 120, // ample space for floating tab bar
   },
   sessionHeaderCard: {
-    backgroundColor: '#0F172A',
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: '#1E293B',
-    padding: 16,
-    marginTop: 16,
-    marginBottom: 20,
+    borderRadius: 24,
+    borderWidth: 1.2,
+    padding: 18,
+    marginTop: 8,
+    marginBottom: 18,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
   },
   sessionMetaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 10,
   },
   weekBadge: {
-    backgroundColor: 'rgba(59, 130, 246, 0.15)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
   },
   weekBadgeText: {
-    color: '#60A5FA',
     fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    fontWeight: '900',
+    letterSpacing: 0.6,
   },
   gymTag: {
-    backgroundColor: '#1E293B',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+    borderWidth: 1,
   },
   gymTagText: {
-    color: '#94A3B8',
     fontSize: 11,
-    fontWeight: '600',
-  },
-  sessionTitle: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: '#F8FAFC',
-    letterSpacing: -0.4,
-  },
-  sessionDetailsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 6,
-  },
-  sessionDetailItem: {
-    fontSize: 11,
-    color: '#94A3B8',
-    fontWeight: '600',
-  },
-  sessionDetailDot: {
-    color: '#475569',
-    fontSize: 10,
-  },
-  sectionTitleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#64748B',
-    letterSpacing: 0.8,
-  },
-  sectionSubtitle: {
-    fontSize: 10,
-    color: '#475569',
-  },
-  exerciseList: {
-    gap: 14,
-    marginBottom: 24,
-  },
-  exerciseCard: {
-    backgroundColor: '#0F172A',
-    borderRadius: 18,
-    borderWidth: 1.5,
-    borderColor: '#1E293B',
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  exerciseCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  indexCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#1E293B',
-    borderWidth: 1,
-    borderColor: '#334155',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  indexNumber: {
-    color: '#60A5FA',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  exerciseName: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  exerciseMuscle: {
-    fontSize: 10,
-    color: '#94A3B8',
-    marginTop: 2,
     fontWeight: '700',
   },
-  machineBusyBtn: {
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.4)',
+  sessionTitle: {
+    fontSize: 21,
+    fontWeight: '900',
+    letterSpacing: -0.4,
+    marginBottom: 12,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  statChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
     paddingHorizontal: 9,
     paddingVertical: 5,
     borderRadius: 8,
   },
+  statChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  sectionTitleRow: {
+    marginBottom: 12,
+    paddingHorizontal: 2,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: -0.3,
+  },
+  sectionSubtitle: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  exerciseList: {
+    gap: 12,
+  },
+  exerciseCard: {
+    borderRadius: 22,
+    borderWidth: 1.2,
+    padding: 14,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  exerciseCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  checkCircleBtn: {
+    marginRight: 10,
+  },
+  exerciseName: {
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  strikethroughText: {
+    textDecorationLine: 'line-through',
+    opacity: 0.6,
+  },
+  exerciseMuscle: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    marginTop: 2,
+  },
+  machineBusyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
   machineBusyText: {
-    color: '#FBBF24',
     fontSize: 11,
     fontWeight: '800',
   },
   targetsRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginTop: 14,
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    marginBottom: 10,
   },
   targetPill: {
-    flex: 1,
-    backgroundColor: '#1E293B',
-    borderRadius: 10,
-    paddingVertical: 8,
     alignItems: 'center',
-  },
-  targetPillWeight: {
-    backgroundColor: 'rgba(59, 130, 246, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.3)',
+    flex: 1,
   },
   targetPillLabel: {
     fontSize: 9,
     fontWeight: '800',
-    color: '#64748B',
     letterSpacing: 0.5,
+    marginBottom: 2,
   },
   targetPillValue: {
     fontSize: 13,
-    fontWeight: '800',
-    color: '#E2E8F0',
-    marginTop: 1,
+    fontWeight: '900',
   },
   targetPillValueWeight: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '900',
-    color: '#60A5FA',
-    marginTop: 1,
+  },
+  targetDivider: {
+    width: 1,
+    height: 18,
+    backgroundColor: 'rgba(150, 150, 150, 0.15)',
+  },
+  bottomMetaRow: {
+    gap: 6,
   },
   cueBox: {
-    backgroundColor: '#1E293B',
-    borderRadius: 10,
+    paddingVertical: 6,
     paddingHorizontal: 10,
-    paddingVertical: 7,
-    marginTop: 10,
+    borderRadius: 8,
+    borderWidth: 1,
   },
   cueText: {
     fontSize: 11,
-    color: '#94A3B8',
-    fontStyle: 'italic',
+    fontWeight: '500',
+    lineHeight: 15,
   },
-  completeSessionBtn: {
-    backgroundColor: '#059669',
-    borderRadius: 18,
-    padding: 16,
+  overloadTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingLeft: 2,
+    marginTop: 2,
+  },
+  overloadTagText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  ctaWrapper: {
+    marginTop: 18,
+  },
+  logButton: {
+    width: '100%',
+    paddingVertical: 14,
+    borderRadius: 22,
+  },
+  ctaContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 6,
+    width: '100%',
   },
-  completeBtnContent: {
+  ctaLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
+    flex: 1,
   },
-  completeBtnEmoji: {
-    fontSize: 26,
+  ctaEmoji: {
+    fontSize: 24,
   },
-  completeBtnTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#FFFFFF',
+  ctaTitle: {
+    fontSize: 14,
+    fontWeight: '900',
+    letterSpacing: -0.2,
   },
-  completeBtnSub: {
-    fontSize: 11,
-    color: '#D1FAE5',
-    marginTop: 2,
+  ctaSub: {
+    fontSize: 10,
+    fontWeight: '600',
+    opacity: 0.85,
+    marginTop: 1,
   },
-  completeBtnArrow: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: 'bold',
+  ctaArrow: {
+    fontSize: 18,
+    fontWeight: '900',
+    marginLeft: 8,
   },
 });

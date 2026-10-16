@@ -1,7 +1,9 @@
 // src/context/BrunoContext.tsx
-// Global State Context for Bruno AI Gym Buddy
+// Global State Context for Bruno AI Gym Buddy with Dynamic Light / Dark Theming
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Haptics from 'expo-haptics';
 import { 
   UserProfile, 
   GymEnvironment, 
@@ -14,6 +16,9 @@ import {
 } from '../types';
 import { BrunoEngine } from '../services/brunoEngine';
 import { StorageService } from '../services/storageService';
+import { ThemeColors, ThemeMode, darkTheme, lightTheme } from '../theme/theme';
+
+const THEME_STORAGE_KEY = '@bruno_theme_mode';
 
 const DEFAULT_GYMS: GymEnvironment[] = [
   {
@@ -70,6 +75,9 @@ interface BrunoContextType {
   activeTab: 'today' | 'program' | 'review' | 'profile';
   selectedExerciseForSwap: PrescribedExercise | null;
   weeklyReview: WeeklyReviewReport | null;
+  theme: ThemeMode;
+  colors: ThemeColors;
+  toggleTheme: () => void;
   setActiveTab: (tab: 'today' | 'program' | 'review' | 'profile') => void;
   setMascotState: (state: MascotState) => void;
   openSwapModal: (exercise: PrescribedExercise) => void;
@@ -93,10 +101,18 @@ export const BrunoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [activeTab, setActiveTab] = useState<'today' | 'program' | 'review' | 'profile'>('today');
   const [mascotState, setMascotState] = useState<MascotState>('studying_journal');
   const [selectedExerciseForSwap, setSelectedExerciseForSwap] = useState<PrescribedExercise | null>(null);
+  const [theme, setTheme] = useState<ThemeMode>('dark');
 
-  // Initialize from storage or generate default
+  // Load theme and saved state
   useEffect(() => {
     async function init() {
+      try {
+        const savedTheme = await AsyncStorage.getItem(THEME_STORAGE_KEY);
+        if (savedTheme === 'light' || savedTheme === 'dark') {
+          setTheme(savedTheme);
+        }
+      } catch (_) {}
+
       const savedProfile = await StorageService.loadProfile();
       const savedProgram = await StorageService.loadProgram();
 
@@ -104,7 +120,6 @@ export const BrunoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setProfile(savedProfile);
         setProgram(savedProgram);
       } else {
-        // Generate pre-loaded program for instant demonstration
         const defaultProg = BrunoEngine.generateProgram(INITIAL_PROFILE);
         setProgram(defaultProg);
       }
@@ -112,19 +127,31 @@ export const BrunoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     init();
   }, []);
 
+  const toggleTheme = () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } catch (_) {}
+    const nextTheme: ThemeMode = theme === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
+    AsyncStorage.setItem(THEME_STORAGE_KEY, nextTheme).catch(() => {});
+  };
+
+  const colors = theme === 'dark' ? darkTheme : lightTheme;
+
   const activeGym = profile.gymEnvironments.find(g => g.id === profile.activeGymId) || profile.gymEnvironments[0];
 
-  // Active workout session for current week & day
   const todaySession = program 
     ? program.sessions.find(s => !s.isCompleted) || program.sessions[0] 
     : null;
 
-  // Weekly review report
   const weeklyReview = program 
     ? BrunoEngine.generateWeeklyReview(program.currentWeek, program.sessions)
     : null;
 
   const openSwapModal = (exercise: PrescribedExercise) => {
+    try {
+      Haptics.selectionAsync();
+    } catch (_) {}
     setSelectedExerciseForSwap(exercise);
   };
 
@@ -133,34 +160,30 @@ export const BrunoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const executeExerciseSwap = (newExercise: ExerciseDefinition) => {
-    if (!program || !todaySession || !selectedExerciseForSwap) return;
+    try {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (_) {}
+    if (!program || !selectedExerciseForSwap) return;
 
-    const updatedExercises = todaySession.exercises.map(ex => {
-      if (ex.id === selectedExerciseForSwap.id) {
-        return {
-          ...ex,
-          exerciseId: newExercise.id,
-          name: newExercise.name,
-          primaryMuscle: newExercise.primaryMuscle,
-          movementPattern: newExercise.movementPattern,
-          targetWeightKg: BrunoEngine.calculateStartingWeight(newExercise, activeGym),
-          cueNote: newExercise.cueNote,
-        };
-      }
-      return ex;
-    });
-
-    const updatedSessions = program.sessions.map(s => {
-      if (s.id === todaySession.id) {
-        return { ...s, exercises: updatedExercises };
-      }
-      return s;
+    const updatedSessions = program.sessions.map(session => {
+      const updatedExercises = session.exercises.map(ex => {
+        if (ex.exerciseId === selectedExerciseForSwap.exerciseId) {
+          return {
+            ...ex,
+            exerciseId: newExercise.id,
+            name: newExercise.name,
+            targetWeightKg: Math.min(ex.targetWeightKg, activeGym.maxDumbbellWeightKg || 50),
+          };
+        }
+        return ex;
+      });
+      return { ...session, exercises: updatedExercises };
     });
 
     const updatedProgram = { ...program, sessions: updatedSessions };
     setProgram(updatedProgram);
     StorageService.saveProgram(updatedProgram);
-    closeSwapModal();
+    setSelectedExerciseForSwap(null);
     setMascotState('approving_nod');
   };
 
@@ -169,44 +192,56 @@ export const BrunoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     rpe: number, 
     jointSoreness: 'none' | 'mild' | 'moderate' | 'severe'
   ) => {
+    try {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (_) {}
     if (!program) return;
 
-    // 1. Mark session as completed with recovery metrics
-    const updatedSessions = program.sessions.map(s => {
+    const targetSession = program.sessions.find(s => s.id === sessionId);
+    if (!targetSession) return;
+
+    const nextSessions = BrunoEngine.applyProgressiveOverload(
+      targetSession,
+      program.sessions
+    );
+
+    const completedSessions = nextSessions.map(s => {
       if (s.id === sessionId) {
         return {
           ...s,
           isCompleted: true,
-          completedAt: new Date().toISOString(),
           userRpeRating: rpe,
-          jointSoreness,
+          jointSoreness: jointSoreness,
+          completedAt: new Date().toISOString(),
+          exercises: s.exercises.map(e => ({
+            ...e,
+            actualRepsAchieved: 10,
+            actualWeightKg: e.targetWeightKg,
+            isCompleted: true,
+          })),
         };
       }
       return s;
     });
 
-    const justCompletedSession = updatedSessions.find(s => s.id === sessionId);
+    const updatedProgram: ProgramBlock = {
+      ...program,
+      sessions: completedSessions,
+    };
 
-    // 2. Trigger Bruno's Automated Progressive Overload Engine (+2.5 kg / +5 kg)
-    let calibratedSessions = updatedSessions;
-    if (justCompletedSession) {
-      calibratedSessions = BrunoEngine.applyProgressiveOverload(justCompletedSession, updatedSessions);
-    }
-
-    const updatedProgram = { ...program, sessions: calibratedSessions };
     setProgram(updatedProgram);
     StorageService.saveProgram(updatedProgram);
-
-    // 3. Update Mascot state
     setMascotState('proud_coach');
   };
 
   const switchGymProfile = (gymId: string) => {
+    try {
+      Haptics.selectionAsync();
+    } catch (_) {}
     const updatedProfile = { ...profile, activeGymId: gymId };
     setProfile(updatedProfile);
     StorageService.saveProfile(updatedProfile);
 
-    // Regenerate program calibrated to new hardware
     const regenerated = BrunoEngine.generateProgram(updatedProfile);
     setProgram(regenerated);
     StorageService.saveProgram(regenerated);
@@ -214,6 +249,9 @@ export const BrunoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const finishOnboarding = (configuredProfile: UserProfile) => {
+    try {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (_) {}
     const finalProfile = { ...configuredProfile, onboardingCompleted: true };
     setProfile(finalProfile);
     StorageService.saveProfile(finalProfile);
@@ -226,6 +264,9 @@ export const BrunoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const resetApp = () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } catch (_) {}
     StorageService.clearAll();
     setProfile(INITIAL_PROFILE);
     const prog = BrunoEngine.generateProgram(INITIAL_PROFILE);
@@ -243,6 +284,9 @@ export const BrunoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       activeTab,
       selectedExerciseForSwap,
       weeklyReview,
+      theme,
+      colors,
+      toggleTheme,
       setActiveTab,
       setMascotState,
       openSwapModal,

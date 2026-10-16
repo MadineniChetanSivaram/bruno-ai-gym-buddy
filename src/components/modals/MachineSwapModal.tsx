@@ -1,5 +1,5 @@
 // src/components/modals/MachineSwapModal.tsx
-// 1-Tap "Machine Busy" Instant Biomechanical Swap Modal
+// 1-Tap "Machine Busy" Instant Biomechanical Swap Modal (Satya / Clucky style)
 
 import React from 'react';
 import { 
@@ -10,6 +10,8 @@ import {
   ScrollView, 
   StyleSheet 
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { RefreshCw, Check, X, ShieldCheck } from 'lucide-react-native';
 import { useBruno } from '../../context/BrunoContext';
 import { BrunoEngine } from '../../services/brunoEngine';
 import { ExerciseDefinition } from '../../types';
@@ -20,7 +22,8 @@ export const MachineSwapModal: React.FC = () => {
     activeGym, 
     profile, 
     closeSwapModal, 
-    executeExerciseSwap 
+    executeExerciseSwap,
+    colors,
   } = useBruno();
 
   if (!selectedExerciseForSwap) return null;
@@ -39,73 +42,128 @@ export const MachineSwapModal: React.FC = () => {
       onRequestClose={closeSwapModal}
     >
       <View style={styles.modalOverlay}>
-        <View style={styles.modalSheet}>
+        <View 
+          style={[
+            styles.modalSheet, 
+            { 
+              backgroundColor: colors.surfaceCard, 
+              borderColor: colors.border,
+              shadowColor: colors.cardShadow,
+            }
+          ]}
+        >
 
-          {/* Modal Drag Handle */}
-          <View style={styles.dragHandle} />
+          {/* Drag Handle */}
+          <View style={[styles.dragHandle, { backgroundColor: colors.borderStrong }]} />
 
           {/* Header */}
-          <View style={styles.headerRow}>
+          <View style={[styles.headerRow, { borderBottomColor: colors.border }]}>
             <View>
               <View style={styles.badgeRow}>
-                <Text style={styles.kickerBadge}>1-TAP BIOMECHANICAL SWAP</Text>
-                <Text style={styles.gymNameBadge}>📍 {activeGym.name}</Text>
+                <View style={[styles.kickerBadge, { backgroundColor: colors.amberGlow }]}>
+                  <Text style={[styles.kickerBadgeText, { color: colors.amber }]}>
+                    1-TAP BIOMECHANICAL SWAP
+                  </Text>
+                </View>
+                <Text style={[styles.gymNameBadge, { color: colors.textMuted }]}>
+                  📍 {activeGym.name}
+                </Text>
               </View>
-              <Text style={styles.title}>Machine Busy or Broken?</Text>
+              <Text style={[styles.title, { color: colors.textPrimary }]}>
+                Machine Busy or Taken?
+              </Text>
             </View>
-            <TouchableOpacity onPress={closeSwapModal} style={styles.closeBtn}>
-              <Text style={styles.closeBtnText}>✕</Text>
+
+            <TouchableOpacity 
+              onPress={closeSwapModal} 
+              style={[styles.closeBtn, { backgroundColor: colors.surfaceSubtle }]}
+              activeOpacity={0.7}
+            >
+              <X size={16} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
-          {/* Currently Occupied Exercise */}
-          <View style={styles.currentCard}>
-            <Text style={styles.currentLabel}>CURRENT PLANNED MOVEMENT:</Text>
-            <Text style={styles.currentName}>{selectedExerciseForSwap.name}</Text>
-            <Text style={styles.currentSub}>
+          {/* Currently Prescribed Exercise Card */}
+          <View style={[styles.currentCard, { backgroundColor: colors.surfaceSubtle, borderColor: colors.border }]}>
+            <Text style={[styles.currentLabel, { color: colors.textMuted }]}>
+              CURRENT PRESCRIBED MOVEMENT:
+            </Text>
+            <Text style={[styles.currentName, { color: colors.textPrimary }]}>
+              {selectedExerciseForSwap.name}
+            </Text>
+            <Text style={[styles.currentSub, { color: colors.amber }]}>
               {selectedExerciseForSwap.targetSets} sets × {selectedExerciseForSwap.targetReps} reps • {selectedExerciseForSwap.targetWeightKg} kg
             </Text>
           </View>
 
-          <Text style={styles.candidatesHeader}>
-            BRUNO'S 3 INSTANT MATCHES ({selectedExerciseForSwap.primaryMuscle.toUpperCase()})
+          <Text style={[styles.candidatesHeader, { color: colors.textSecondary }]}>
+            BRUNO'S 3 BIOMECHANICALLY IDENTICAL ALTERNATIVES:
           </Text>
 
-          {/* Candidate Swaps List */}
-          <ScrollView style={styles.candidatesList} showsVerticalScrollIndicator={false}>
+          {/* Candidates List */}
+          <ScrollView 
+            showsVerticalScrollIndicator={false} 
+            contentContainerStyle={styles.candidatesList}
+          >
             {candidateSwaps.length === 0 ? (
-              <View style={styles.emptyCard}>
-                <Text style={styles.emptyText}>No matching alternative exercises found in your active gym equipment profile.</Text>
+              <View style={styles.emptySwapContainer}>
+                <Text style={[styles.emptySwapText, { color: colors.textSecondary }]}>
+                  No other safe movements found in this gym's equipment profile for your injury filters.
+                </Text>
               </View>
             ) : (
-              candidateSwaps.map(candidate => {
-                const targetWeight = BrunoEngine.calculateStartingWeight(candidate, activeGym);
-                return (
-                  <View key={candidate.id} style={styles.swapCard}>
-                    <View style={styles.swapCardHeader}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.candidateName}>{candidate.name}</Text>
-                        <Text style={styles.candidatePattern}>
-                          Pattern: {candidate.movementPattern.replace('_', ' ')} • Gear: {candidate.requiredEquipment.replace('_', ' ')}
-                        </Text>
+              candidateSwaps.map((candidate, idx) => (
+                <TouchableOpacity
+                  key={candidate.id}
+                  style={[
+                    styles.candidateCard, 
+                    { 
+                      backgroundColor: colors.surfaceSubtle, 
+                      borderColor: colors.border,
+                      shadowColor: colors.cardShadow,
+                    }
+                  ]}
+                  activeOpacity={0.82}
+                  onPress={() => executeExerciseSwap(candidate)}
+                >
+                  <View style={styles.candidateHeader}>
+                    <View style={styles.candidateLeft}>
+                      <View style={[styles.indexCircle, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
+                        <Text style={[styles.indexText, { color: colors.amber }]}>{idx + 1}</Text>
                       </View>
-                      <View style={styles.weightBadge}>
-                        <Text style={styles.weightText}>{targetWeight} kg</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.candidateName, { color: colors.textPrimary }]} numberOfLines={1}>
+                          {candidate.name}
+                        </Text>
+                        <Text style={[styles.candidateMeta, { color: colors.textMuted }]}>
+                          Requires: {candidate.requiredEquipment.replace('_', ' ').toUpperCase()}
+                        </Text>
                       </View>
                     </View>
 
-                    <Text style={styles.candidateCue}>💡 {candidate.cueNote}</Text>
-
-                    <TouchableOpacity
-                      activeOpacity={0.8}
-                      onPress={() => executeExerciseSwap(candidate)}
-                      style={styles.swapButton}
-                    >
-                      <Text style={styles.swapButtonText}>Swap to This Exercise ⚡</Text>
-                    </TouchableOpacity>
+                    <View style={[styles.swapInBtn, { backgroundColor: colors.amber }]}>
+                      <RefreshCw size={12} color={colors.textInverted} />
+                      <Text style={[styles.swapInText, { color: colors.textInverted }]}>Swap In</Text>
+                    </View>
                   </View>
-                );
-              })
+
+                  <View style={[styles.matchIndicatorRow, { borderTopColor: colors.border }]}>
+                    <View style={styles.matchTag}>
+                      <Check size={11} color={colors.success} />
+                      <Text style={[styles.matchTagText, { color: colors.success }]}>
+                        100% {candidate.movementPattern.replace('_', ' ')} Match
+                      </Text>
+                    </View>
+
+                    <View style={styles.matchTag}>
+                      <ShieldCheck size={11} color={colors.info} />
+                      <Text style={[styles.matchTagText, { color: colors.info }]}>
+                        Joint Safe
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))
             )}
           </ScrollView>
 
@@ -118,164 +176,184 @@ export const MachineSwapModal: React.FC = () => {
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: 'rgba(0, 0, 0, 0.72)',
     justifyContent: 'flex-end',
   },
   modalSheet: {
-    backgroundColor: '#0F172A',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    borderWidth: 1,
-    borderColor: '#334155',
-    padding: 20,
-    maxHeight: '88%',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    borderWidth: 1.5,
+    borderBottomWidth: 0,
+    maxHeight: '84%',
+    paddingBottom: 28,
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 12,
   },
   dragHandle: {
-    width: 36,
+    width: 38,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#475569',
     alignSelf: 'center',
-    marginBottom: 16,
+    marginTop: 10,
+    marginBottom: 4,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
   },
   badgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     marginBottom: 4,
   },
   kickerBadge: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#3B82F6',
-    letterSpacing: 0.5,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  kickerBadgeText: {
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 0.6,
   },
   gymNameBadge: {
     fontSize: 10,
-    color: '#94A3B8',
+    fontWeight: '700',
   },
   title: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#F8FAFC',
+    fontSize: 17,
+    fontWeight: '900',
+    letterSpacing: -0.3,
   },
   closeBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#1E293B',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  closeBtnText: {
-    color: '#94A3B8',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
   currentCard: {
-    backgroundColor: '#1E293B',
-    borderRadius: 14,
+    marginHorizontal: 20,
+    marginTop: 14,
+    marginBottom: 10,
     padding: 12,
-    marginBottom: 16,
-    borderLeftWidth: 3,
-    borderLeftColor: '#F59E0B',
+    borderRadius: 16,
+    borderWidth: 1.2,
   },
   currentLabel: {
     fontSize: 9,
     fontWeight: '800',
-    color: '#F59E0B',
     letterSpacing: 0.5,
+    marginBottom: 2,
   },
   currentName: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#F1F5F9',
-    marginTop: 2,
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: -0.2,
   },
   currentSub: {
     fontSize: 11,
-    color: '#94A3B8',
+    fontWeight: '700',
     marginTop: 2,
   },
   candidatesHeader: {
-    fontSize: 11,
+    paddingHorizontal: 20,
+    marginTop: 8,
+    marginBottom: 8,
+    fontSize: 10,
     fontWeight: '800',
-    color: '#64748B',
-    letterSpacing: 0.8,
-    marginBottom: 10,
+    letterSpacing: 0.6,
   },
   candidatesList: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    gap: 10,
+  },
+  candidateCard: {
+    borderRadius: 18,
+    borderWidth: 1.2,
+    padding: 14,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  candidateHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 10,
   },
-  emptyCard: {
-    padding: 20,
-    alignItems: 'center',
-  },
-  emptyText: {
-    color: '#94A3B8',
-    fontSize: 12,
-    textAlign: 'center',
-  },
-  swapCard: {
-    backgroundColor: '#1E293B',
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: '#334155',
-    padding: 14,
-    marginBottom: 12,
-  },
-  swapCardHeader: {
+  candidateLeft: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  indexCircle: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  indexText: {
+    fontSize: 11,
+    fontWeight: '900',
   },
   candidateName: {
     fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontWeight: '800',
   },
-  candidatePattern: {
+  candidateMeta: {
     fontSize: 10,
-    color: '#94A3B8',
-    marginTop: 2,
+    fontWeight: '600',
+    marginTop: 1,
+  },
+  swapInBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  swapInText: {
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  matchIndicatorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingTop: 8,
+    borderTopWidth: 1,
+  },
+  matchTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  matchTagText: {
+    fontSize: 10,
+    fontWeight: '700',
     textTransform: 'capitalize',
   },
-  weightBadge: {
-    backgroundColor: 'rgba(59, 130, 246, 0.2)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.4)',
-  },
-  weightText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#60A5FA',
-  },
-  candidateCue: {
-    fontSize: 11,
-    color: '#CBD5E1',
-    lineHeight: 16,
-    marginTop: 8,
-    marginBottom: 12,
-    fontStyle: 'italic',
-  },
-  swapButton: {
-    backgroundColor: '#2563EB',
-    borderRadius: 10,
-    paddingVertical: 10,
+  emptySwapContainer: {
+    padding: 24,
     alignItems: 'center',
   },
-  swapButtonText: {
-    color: '#FFFFFF',
+  emptySwapText: {
     fontSize: 12,
-    fontWeight: '700',
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });

@@ -1,3 +1,6 @@
+// App.tsx
+// Root Application Shell with Dynamic Light/Dark Theme, Quick Theme Switcher & Island Tab Navigation
+
 import React from 'react';
 import {
   SafeAreaView,
@@ -16,7 +19,7 @@ import { WeeklyReviewView } from './src/components/views/WeeklyReviewView';
 import { GymProfileView } from './src/components/views/GymProfileView';
 import { BrunoTabBar, TabType } from './src/components/navigation/BrunoTabBar';
 import { MachineSwapModal } from './src/components/modals/MachineSwapModal';
-import { Building2, ShieldAlert } from 'lucide-react-native';
+import { Building2, ShieldAlert, Sun, Moon } from 'lucide-react-native';
 
 const MainApp: React.FC = () => {
   const {
@@ -26,6 +29,9 @@ const MainApp: React.FC = () => {
     setActiveTab,
     finishOnboarding,
     todaySession,
+    theme,
+    colors,
+    toggleTheme,
   } = useBruno();
 
   // If user hasn't finished onboarding, present the chalked Den intro
@@ -34,37 +40,64 @@ const MainApp: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#090D16" />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <StatusBar 
+        barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} 
+        backgroundColor={colors.surfaceCard} 
+      />
 
-      {/* Top Universal Gym Status Bar */}
-      <View style={styles.topBar}>
+      {/* Top Universal Header Bar */}
+      <View 
+        style={[
+          styles.topBar, 
+          { 
+            backgroundColor: colors.surfaceCard, 
+            borderBottomColor: colors.border,
+            shadowColor: colors.cardShadow,
+          }
+        ]}
+      >
         <TouchableOpacity
-          style={styles.gymIndicator}
+          style={[styles.gymIndicator, { backgroundColor: colors.surfaceSubtle, borderColor: colors.border }]}
           onPress={() => setActiveTab('profile')}
           activeOpacity={0.8}
         >
-          <Building2 size={16} color="#F59E0B" />
-          <Text style={styles.gymIndicatorText} numberOfLines={1}>
+          <Building2 size={15} color={colors.amber} />
+          <Text style={[styles.gymIndicatorText, { color: colors.textPrimary }]} numberOfLines={1}>
             {activeGym?.name || 'Commercial Gym'}
           </Text>
         </TouchableOpacity>
 
-        {profile.injuryBlacklist.length > 0 && (
+        <View style={styles.topBarRight}>
+          {profile.injuryBlacklist.length > 0 && (
+            <TouchableOpacity
+              style={[styles.injuryBadge, { backgroundColor: colors.dangerBg, borderColor: colors.danger }]}
+              onPress={() => setActiveTab('profile')}
+              activeOpacity={0.8}
+            >
+              <ShieldAlert size={13} color={colors.danger} />
+              <Text style={[styles.injuryBadgeText, { color: colors.danger }]}>
+                {profile.injuryBlacklist.length} Guarded
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Quick Theme Switcher Pill (Light / Dark) */}
           <TouchableOpacity
-            style={styles.injuryBadge}
-            onPress={() => setActiveTab('profile')}
-            activeOpacity={0.8}
+            style={[styles.themeToggleBtn, { backgroundColor: colors.surfaceSubtle, borderColor: colors.border }]}
+            onPress={toggleTheme}
+            activeOpacity={0.7}
           >
-            <ShieldAlert size={14} color="#EF4444" />
-            <Text style={styles.injuryBadgeText}>
-              {profile.injuryBlacklist.length} Guarded
-            </Text>
+            {theme === 'dark' ? (
+              <Sun size={15} color={colors.amber} />
+            ) : (
+              <Moon size={15} color={colors.amber} />
+            )}
           </TouchableOpacity>
-        )}
+        </View>
       </View>
 
-      {/* Main Screen Body */}
+      {/* Main Screen Views */}
       <View style={styles.screenContainer}>
         {activeTab === 'today' && <TodayWorkoutView />}
         {activeTab === 'program' && <ProgramPlanView />}
@@ -72,7 +105,7 @@ const MainApp: React.FC = () => {
         {activeTab === 'profile' && <GymProfileView />}
       </View>
 
-      {/* Universal Tab Navigation */}
+      {/* Floating Island Tab Bar */}
       <BrunoTabBar
         currentTab={activeTab as TabType}
         onSelectTab={(tab) => setActiveTab(tab)}
@@ -98,7 +131,6 @@ export default function App() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#090D16',
   },
   topBar: {
     flexDirection: 'row',
@@ -106,40 +138,52 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#0F172A',
-    borderBottomWidth: 1,
-    borderBottomColor: '#1E293B',
+    borderBottomWidth: 1.2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+    zIndex: 10,
   },
   gymIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1E293B',
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: 10,
+    borderWidth: 1,
     gap: 6,
-    maxWidth: '65%',
+    maxWidth: '58%',
   },
   gymIndicatorText: {
-    color: '#E2E8F0',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
+  },
+  topBarRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   injuryBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(239, 68, 68, 0.12)',
     paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: 8,
     gap: 4,
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.3)',
   },
   injuryBadgeText: {
-    color: '#EF4444',
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  themeToggleBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   screenContainer: {
     flex: 1,
