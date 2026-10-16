@@ -20,7 +20,7 @@ import { WeeklyReviewView } from './src/components/views/WeeklyReviewView';
 import { GymProfileView } from './src/components/views/GymProfileView';
 import { BrunoTabBar, TabType } from './src/components/navigation/BrunoTabBar';
 import { MachineSwapModal } from './src/components/modals/MachineSwapModal';
-import { Building2, ShieldAlert, Sun, Moon } from 'lucide-react-native';
+import { Building2, ShieldAlert, Sun, Moon, Database, CheckCircle2 } from 'lucide-react-native';
 
 const MainApp: React.FC = () => {
   const {
@@ -33,6 +33,9 @@ const MainApp: React.FC = () => {
     theme,
     colors,
     toggleTheme,
+    backendConnected,
+    isSyncing,
+    syncWithBackend,
   } = useBruno();
 
   // If user hasn't finished onboarding, present the chalked Den intro
@@ -70,6 +73,24 @@ const MainApp: React.FC = () => {
         </TouchableOpacity>
 
         <View style={styles.topBarRight}>
+          {/* Live Backend Connection Badge */}
+          <TouchableOpacity
+            style={[
+              styles.backendPill,
+              { 
+                backgroundColor: backendConnected ? '#ECFDF5' : colors.surfaceSubtle,
+                borderColor: backendConnected ? '#10B981' : colors.border
+              }
+            ]}
+            onPress={syncWithBackend}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.statusDot, { backgroundColor: backendConnected ? '#10B981' : '#9CA3AF' }]} />
+            <Text style={[styles.backendPillText, { color: backendConnected ? '#059669' : colors.textMuted }]}>
+              {isSyncing ? 'Syncing...' : (backendConnected ? 'API Live' : 'Offline')}
+            </Text>
+          </TouchableOpacity>
+
           {profile.injuryBlacklist.length > 0 && (
             <TouchableOpacity
               style={[styles.injuryBadge, { backgroundColor: colors.dangerBg, borderColor: colors.danger }]}
@@ -187,6 +208,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  backendPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 5,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  backendPillText: {
+    fontSize: 10,
+    fontWeight: '800',
   },
   screenContainer: {
     flex: 1,

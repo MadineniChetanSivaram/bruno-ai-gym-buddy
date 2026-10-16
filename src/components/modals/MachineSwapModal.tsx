@@ -14,6 +14,7 @@ import * as Haptics from 'expo-haptics';
 import { RefreshCw, Check, X, ShieldCheck } from 'lucide-react-native';
 import { useBruno } from '../../context/BrunoContext';
 import { BrunoEngine } from '../../services/brunoEngine';
+import { apiService } from '../../services/apiService';
 import { ExerciseDefinition } from '../../types';
 
 export const MachineSwapModal: React.FC = () => {
@@ -24,15 +25,39 @@ export const MachineSwapModal: React.FC = () => {
     closeSwapModal, 
     executeExerciseSwap,
     colors,
+    backendConnected,
   } = useBruno();
+
+  const [remoteSwaps, setRemoteSwaps] = React.useState<ExerciseDefinition[]>([]);
+
+  React.useEffect(() => {
+    if (!selectedExerciseForSwap) return;
+    let isMounted = true;
+    apiService.getExercises({
+      movementPattern: selectedExerciseForSwap.movementPattern,
+    }).then(res => {
+      if (isMounted && res.exercises.length > 0) {
+        const filtered = res.exercises.filter(
+          e => e.id !== selectedExerciseForSwap.exerciseId && e.name !== selectedExerciseForSwap.name
+        );
+        if (filtered.length > 0) {
+          setRemoteSwaps(filtered.slice(0, 3));
+        }
+      }
+    }).catch(() => {});
+
+    return () => { isMounted = false; };
+  }, [selectedExerciseForSwap]);
 
   if (!selectedExerciseForSwap) return null;
 
-  const candidateSwaps: ExerciseDefinition[] = BrunoEngine.getMachineSwaps(
-    selectedExerciseForSwap.exerciseId,
-    activeGym,
-    profile.injuryBlacklist
-  );
+  const candidateSwaps: ExerciseDefinition[] = remoteSwaps.length > 0
+    ? remoteSwaps
+    : BrunoEngine.getMachineSwaps(
+        selectedExerciseForSwap.exerciseId,
+        activeGym,
+        profile.injuryBlacklist
+      );
 
   return (
     <Modal

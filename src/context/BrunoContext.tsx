@@ -1,5 +1,5 @@
 // src/context/BrunoContext.tsx
-// Global State Context for Bruno AI Gym Buddy with Dynamic Light / Dark Theming
+// Global State Context for Bruno AI Gym Buddy with Dynamic Theming & Live Backend Integration
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -10,12 +10,14 @@ import {
   ProgramBlock, 
   WorkoutSession, 
   MascotState, 
-  ExerciseDefinition,
-  PrescribedExercise,
-  WeeklyReviewReport 
+  ExerciseDefinition, 
+  PrescribedExercise, 
+  WeeklyReviewReport,
+  JointContraindication
 } from '../types';
 import { BrunoEngine } from '../services/brunoEngine';
 import { StorageService } from '../services/storageService';
+import { apiService, BackendGymProfile, BackendConstraint } from '../services/apiService';
 import { ThemeColors, ThemeMode, darkTheme, lightTheme } from '../theme/theme';
 
 const THEME_STORAGE_KEY = '@bruno_theme_mode';
@@ -77,6 +79,10 @@ interface BrunoContextType {
   weeklyReview: WeeklyReviewReport | null;
   theme: ThemeMode;
   colors: ThemeColors;
+  backendConnected: boolean;
+  isSyncing: boolean;
+  remoteExercises: ExerciseDefinition[];
+  syncWithBackend: () => Promise<void>;
   toggleTheme: () => void;
   setActiveTab: (tab: 'today' | 'program' | 'review' | 'profile') => void;
   setMascotState: (state: MascotState) => void;
@@ -102,8 +108,11 @@ export const BrunoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [mascotState, setMascotState] = useState<MascotState>('studying_journal');
   const [selectedExerciseForSwap, setSelectedExerciseForSwap] = useState<PrescribedExercise | null>(null);
   const [theme, setTheme] = useState<ThemeMode>('dark');
+  const [backendConnected, setBackendConnected] = useState<boolean>(false);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [remoteExercises, setRemoteExercises] = useState<ExerciseDefinition[]>([]);
 
-  // Load theme and saved state
+  // Load theme and saved state, then connect to live Fastify backend
   useEffect(() => {
     async function init() {
       try {
@@ -116,16 +125,104 @@ export const BrunoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const savedProfile = await StorageService.loadProfile();
       const savedProgram = await StorageService.loadProgram();
 
+      let currentProf = savedProfile;
       if (savedProfile && savedProfile.onboardingCompleted && savedProgram) {
         setProfile(savedProfile);
         setProgram(savedProgram);
       } else {
         const defaultProg = BrunoEngine.generateProgram(INITIAL_PROFILE);
         setProgram(defaultProg);
+        currentProf = INITIAL_PROFILE;
       }
+
+      // Check live backend connection and sync
+      await checkAndSyncBackend(currentProf);
     }
     init();
   }, []);
+
+  const checkAndSyncBackend = async (currentProf?: UserProfile) => {
+    setIsSyncing(true);
+    try {
+      const health = await apiService.checkHealth();
+      setBackendConnected(health.ok);
+
+      if (health.ok) {
+        const authed = await apiService.ensureAuthenticated();
+        if (authed) {
+          // 1. Fetch remote exercises
+          const exerciseRes = await apiService.getExercises();
+          if (exerciseRes.exercises.length > 0) {
+            setRemoteExercises(exerciseRes.exercises);
+          }
+
+          // 2. Fetch remote gym profiles
+          const remoteGyms = await apiService.getGymProfiles();
+          if (remoteGyms.length > 0) {
+            // Map remote gyms to GymEnvironment
+            const mappedGyms: GymEnvironment[] = remoteGyms.map((rg) => ({
+              id: rg.id,
+              name: rg.name,
+              type: rg.environmentType || 'commercial',
+              maxDumbbellWeightKg: rg.maxDumbbellWeightKg || 50,
+              hasBarbellRack: rg.hasBarbell || rg.hasSquatRack,
+              hasCableStack: rg.hasCableStack,
+              hasSmithMachine: rg.hasSmithMachine,
+              hasPullUpBar: rg.hasPullupBar,
+            }));
+
+            setProfile((prev) => {
+              const updated = {
+                ...prev,
+                gymEnvironments: mappedGyms,
+                activeGymId: mappedGyms[0]?.id || prev.activeGymId,
+              };
+              StorageService.saveProfile(updated);
+              return updated;
+            });
+          } else if (currentProf && currentProf.gymEnvironments.length > 0) {
+            // Push local default gym to backend
+            const activeG = currentProf.gymEnvironments[0];
+            await apiService.createGymProfile({
+              name: activeG.name,
+              environmentType: activeG.type,
+              maxDumbbellWeightKg: activeG.maxDumbbellWeightKg,
+              hasBarbell: activeG.hasBarbellRack,
+              hasSquatRack: activeG.hasBarbellRack,
+              hasCableStack: activeG.hasCableStack,
+              hasSmithMachine: activeG.hasSmithMachine,
+              hasPullupBar: activeG.hasPullUpBar,
+              hasDumbbells: true,
+              isDefault: true,
+            });
+          }
+
+          // 3. Fetch remote constraints
+          const remoteConstraints = await apiService.getConstraints();
+          if (remoteConstraints.length > 0) {
+            const blacklist = remoteConstraints.map(c => c.jointArea as JointContraindication);
+            setProfile((prev) => {
+              const updated = { ...prev, injuryBlacklist: blacklist };
+              StorageService.saveProfile(updated);
+              return updated;
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[BrunoContext] Backend sync notice:', e);
+      setBackendConnected(false);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const syncWithBackend = async () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (_) {}
+    await checkAndSyncBackend(profile);
+  };
 
   const toggleTheme = () => {
     try {
@@ -248,7 +345,7 @@ export const BrunoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setMascotState('studying_journal');
   };
 
-  const finishOnboarding = (configuredProfile: UserProfile) => {
+  const finishOnboarding = async (configuredProfile: UserProfile) => {
     try {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (_) {}
@@ -261,6 +358,34 @@ export const BrunoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     StorageService.saveProgram(newProgram);
     setActiveTab('today');
     setMascotState('approving_nod');
+
+    // Async sync onboarding data to backend in background
+    if (backendConnected) {
+      try {
+        const activeG = finalProfile.gymEnvironments.find(g => g.id === finalProfile.activeGymId) || finalProfile.gymEnvironments[0];
+        if (activeG) {
+          await apiService.createGymProfile({
+            name: activeG.name,
+            environmentType: activeG.type,
+            maxDumbbellWeightKg: activeG.maxDumbbellWeightKg,
+            hasBarbell: activeG.hasBarbellRack,
+            hasSquatRack: activeG.hasBarbellRack,
+            hasCableStack: activeG.hasCableStack,
+            hasSmithMachine: activeG.hasSmithMachine,
+            hasPullupBar: activeG.hasPullUpBar,
+            hasDumbbells: true,
+            isDefault: true,
+          });
+        }
+
+        // Sync constraints
+        for (const joint of finalProfile.injuryBlacklist) {
+          await apiService.addConstraint(joint, `Restricted during onboarding for ${joint}`);
+        }
+      } catch (e) {
+        console.warn('[BrunoContext] Background sync after onboarding notice:', e);
+      }
+    }
   };
 
   const resetApp = () => {
@@ -286,6 +411,10 @@ export const BrunoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       weeklyReview,
       theme,
       colors,
+      backendConnected,
+      isSyncing,
+      remoteExercises,
+      syncWithBackend,
       toggleTheme,
       setActiveTab,
       setMascotState,

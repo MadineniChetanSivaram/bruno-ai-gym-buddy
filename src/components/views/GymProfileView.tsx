@@ -18,7 +18,9 @@ import {
   Moon, 
   RotateCcw, 
   Check, 
-  Dumbbell 
+  Dumbbell,
+  Database,
+  RefreshCw
 } from 'lucide-react-native';
 import { useBruno } from '../../context/BrunoContext';
 import { JointContraindication } from '../../types';
@@ -31,7 +33,10 @@ export const GymProfileView: React.FC = () => {
     resetApp, 
     theme, 
     colors, 
-    toggleTheme 
+    toggleTheme,
+    backendConnected,
+    isSyncing,
+    syncWithBackend,
   } = useBruno();
 
   const handleToggleInjury = (joint: JointContraindication) => {
@@ -238,6 +243,66 @@ export const GymProfileView: React.FC = () => {
           </View>
         </View>
 
+        {/* Live Cloud Backend Status Card */}
+        <View style={[styles.sectionCard, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionHeaderLeft}>
+              <View style={[styles.sectionIconCircle, { backgroundColor: backendConnected ? '#ECFDF5' : colors.surfaceSubtle }]}>
+                <Database size={16} color={backendConnected ? '#059669' : colors.textMuted} />
+              </View>
+              <View>
+                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+                  Cloud Backend & Database
+                </Text>
+                <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
+                  Fastify 5 • PostgreSQL • Drizzle ORM
+                </Text>
+              </View>
+            </View>
+
+            <View style={[styles.liveBadge, { backgroundColor: backendConnected ? '#ECFDF5' : colors.surfaceSubtle }]}>
+              <View style={[styles.liveDot, { backgroundColor: backendConnected ? '#10B981' : '#9CA3AF' }]} />
+              <Text style={[styles.liveBadgeText, { color: backendConnected ? '#059669' : colors.textMuted }]}>
+                {backendConnected ? 'LIVE' : 'OFFLINE'}
+              </Text>
+            </View>
+          </View>
+
+          <View style={[styles.cloudInfoBox, { backgroundColor: colors.surfaceSubtle, borderColor: colors.border }]}>
+            <View style={styles.cloudInfoRow}>
+              <Text style={[styles.cloudLabel, { color: colors.textMuted }]}>API Server:</Text>
+              <Text style={[styles.cloudValue, { color: colors.textPrimary }]} numberOfLines={1}>
+                ds3xeksdqbnoqesxabywgrke.167.233.97.217.sslip.io
+              </Text>
+            </View>
+
+            <View style={styles.cloudInfoRow}>
+              <Text style={[styles.cloudLabel, { color: colors.textMuted }]}>Exercise Catalogue:</Text>
+              <Text style={[styles.cloudValue, { color: colors.textPrimary }]}>
+                40 Core Exercises (PostgreSQL)
+              </Text>
+            </View>
+
+            <View style={styles.cloudInfoRow}>
+              <Text style={[styles.cloudLabel, { color: colors.textMuted }]}>Constraint Filter:</Text>
+              <Text style={[styles.cloudValue, { color: colors.amber }]}>
+                Algorithmic Biomechanical Safety Active
+              </Text>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.syncButton, { backgroundColor: colors.amber }]}
+            onPress={syncWithBackend}
+            activeOpacity={0.85}
+          >
+            <RefreshCw size={14} color="#FFFFFF" />
+            <Text style={styles.syncButtonText}>
+              {isSyncing ? 'Synchronizing with Cloud...' : 'Sync with Backend Now'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Reset / Onboarding Repeat */}
         <TouchableOpacity
           onPress={handleReset}
@@ -376,6 +441,59 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  liveBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 5,
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  liveBadgeText: {
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.6,
+  },
+  cloudInfoBox: {
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: 12,
+    gap: 8,
+  },
+  cloudInfoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  cloudLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  cloudValue: {
+    fontSize: 11,
+    fontWeight: '800',
+    maxWidth: '65%',
+  },
+  syncButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 14,
+    marginTop: 12,
+    gap: 6,
+  },
+  syncButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
   },
   resetButton: {
     flexDirection: 'row',
