@@ -82,11 +82,13 @@ export const BrunoMascotImage: React.FC<BrunoMascotImageProps> = ({
 
   // Aspect ratio adjustments based on pose
   let height = size;
+  const isDashboardAvatar = pose === 'dashboard';
+
   if (pose === 'welcome') height = size * 1.35;
   else if (pose === 'splash') height = size * 1.05;
   else if (pose === 'flex') height = size * 0.82;
   else if (pose === 'thumbs_up') height = size * 1.05;
-  else if (pose === 'dashboard') height = size * 1.25;
+  else if (pose === 'dashboard') height = size;
 
   const content = (
     <Animated.View
@@ -98,11 +100,30 @@ export const BrunoMascotImage: React.FC<BrunoMascotImageProps> = ({
         justifyContent: 'center',
       }}
     >
-      <Image
-        source={imageSource}
-        style={{ width: size, height }}
-        resizeMode="contain"
-      />
+      <View
+        style={[
+          isDashboardAvatar && {
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            overflow: 'hidden',
+            borderWidth: 2.5,
+            borderColor: '#D9572B',
+            backgroundColor: '#FAF6F0',
+            shadowColor: '#D9572B',
+            shadowOffset: { width: 0, height: 3 },
+            shadowOpacity: 0.2,
+            shadowRadius: 6,
+            elevation: 3,
+          }
+        ]}
+      >
+        <Image
+          source={imageSource}
+          style={{ width: size, height }}
+          resizeMode={isDashboardAvatar ? "cover" : "contain"}
+        />
+      </View>
     </Animated.View>
   );
 

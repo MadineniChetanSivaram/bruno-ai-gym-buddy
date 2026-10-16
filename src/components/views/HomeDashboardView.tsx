@@ -82,7 +82,7 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({ onStartWor
           ]}
         >
           <View style={styles.mascotImageWrapper}>
-            <BrunoMascotImage pose="dashboard" size={85} animated={true} />
+            <BrunoMascotImage pose="dashboard" size={76} animated={true} />
           </View>
 
           <View style={styles.speechBubbleWrapper}>

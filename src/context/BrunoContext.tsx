@@ -79,6 +79,9 @@ interface BrunoContextType {
   weeklyReview: WeeklyReviewReport | null;
   theme: ThemeMode;
   colors: ThemeColors;
+  showOnboarding: boolean;
+  setShowOnboarding: (val: boolean) => void;
+  startOnboarding: () => void;
   backendConnected: boolean;
   isSyncing: boolean;
   remoteExercises: ExerciseDefinition[];
@@ -111,6 +114,7 @@ export const BrunoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [backendConnected, setBackendConnected] = useState<boolean>(false);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [remoteExercises, setRemoteExercises] = useState<ExerciseDefinition[]>([]);
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(true); // Start directly in onboarding
 
   // Load theme and saved state, then connect to live Fastify backend
   useEffect(() => {
@@ -140,6 +144,13 @@ export const BrunoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
     init();
   }, []);
+
+  const startOnboarding = () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } catch (_) {}
+    setShowOnboarding(true);
+  };
 
   const checkAndSyncBackend = async (currentProf?: UserProfile) => {
     setIsSyncing(true);
@@ -356,6 +367,7 @@ export const BrunoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const newProgram = BrunoEngine.generateProgram(finalProfile);
     setProgram(newProgram);
     StorageService.saveProgram(newProgram);
+    setShowOnboarding(false);
     setActiveTab('today');
     setMascotState('approving_nod');
 
@@ -396,6 +408,7 @@ export const BrunoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setProfile(INITIAL_PROFILE);
     const prog = BrunoEngine.generateProgram(INITIAL_PROFILE);
     setProgram(prog);
+    setShowOnboarding(true);
     setActiveTab('today');
   };
 
@@ -411,6 +424,9 @@ export const BrunoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       weeklyReview,
       theme,
       colors,
+      showOnboarding,
+      setShowOnboarding,
+      startOnboarding,
       backendConnected,
       isSyncing,
       remoteExercises,

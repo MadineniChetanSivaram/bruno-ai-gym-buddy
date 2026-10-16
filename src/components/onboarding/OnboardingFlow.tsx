@@ -32,9 +32,10 @@ import { BrunoMascotImage } from '../mascot/BrunoMascotImage';
 
 interface OnboardingFlowProps {
   onComplete: (profile: UserProfile) => void;
+  onExit?: () => void;
 }
 
-export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
+export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, onExit }) => {
   const { colors } = useBruno();
   // Steps 1 to 8:
   // 1: Splash / Intro
@@ -162,8 +163,8 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
             ))}
           </View>
 
-          <TouchableOpacity onPress={() => setCurrentStep(8)} style={styles.skipButton}>
-            <Text style={[styles.skipText, { color: colors.textSecondary }]}>Skip</Text>
+          <TouchableOpacity onPress={onExit ? onExit : () => setCurrentStep(8)} style={styles.skipButton}>
+            <Text style={[styles.skipText, { color: colors.amber }]}>{onExit ? 'Dashboard ✕' : 'Skip'}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -178,6 +179,16 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
         {/* ============================================================== */}
         {currentStep === 1 && (
           <View style={styles.screenWrapper}>
+            {onExit && (
+              <View style={{ width: '100%', alignItems: 'flex-end', marginBottom: 4 }}>
+                <TouchableOpacity 
+                  onPress={onExit} 
+                  style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceCard }}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: '800', color: colors.amber }}>View Dashboard →</Text>
+                </TouchableOpacity>
+              </View>
+            )}
             {/* Title 3D Graphic */}
             <View style={styles.splashTitleBox}>
               <Text style={styles.splashBrand}>BRUNO</Text>

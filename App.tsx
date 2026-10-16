@@ -20,7 +20,7 @@ import { WeeklyReviewView } from './src/components/views/WeeklyReviewView';
 import { GymProfileView } from './src/components/views/GymProfileView';
 import { BrunoTabBar, TabType } from './src/components/navigation/BrunoTabBar';
 import { MachineSwapModal } from './src/components/modals/MachineSwapModal';
-import { Building2, ShieldAlert, Sun, Moon, Database, CheckCircle2 } from 'lucide-react-native';
+import { Building2, ShieldAlert, Sun, Moon, Database, CheckCircle2, Sparkles } from 'lucide-react-native';
 
 const MainApp: React.FC = () => {
   const {
@@ -36,11 +36,19 @@ const MainApp: React.FC = () => {
     backendConnected,
     isSyncing,
     syncWithBackend,
+    showOnboarding,
+    setShowOnboarding,
+    startOnboarding,
   } = useBruno();
 
-  // If user hasn't finished onboarding, present the chalked Den intro
-  if (!profile.onboardingCompleted) {
-    return <OnboardingFlow onComplete={finishOnboarding} />;
+  // If user hasn't finished onboarding or requested replay, show the 8-step flow
+  if (showOnboarding || !profile.onboardingCompleted) {
+    return (
+      <OnboardingFlow 
+        onComplete={finishOnboarding} 
+        onExit={() => setShowOnboarding(false)} 
+      />
+    );
   }
 
   return (
@@ -73,6 +81,18 @@ const MainApp: React.FC = () => {
         </TouchableOpacity>
 
         <View style={styles.topBarRight}>
+          {/* Quick Onboarding Button */}
+          <TouchableOpacity
+            style={[styles.onboardingBtn, { backgroundColor: colors.amberGlow, borderColor: colors.amber }]}
+            onPress={startOnboarding}
+            activeOpacity={0.8}
+          >
+            <Sparkles size={13} color={colors.amber} />
+            <Text style={[styles.onboardingBtnText, { color: colors.amber }]}>
+              Onboarding
+            </Text>
+          </TouchableOpacity>
+
           {/* Live Backend Connection Badge */}
           <TouchableOpacity
             style={[
@@ -198,6 +218,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   injuryBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  onboardingBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 4,
+  },
+  onboardingBtnText: {
     fontSize: 10,
     fontWeight: '800',
   },
