@@ -1,9 +1,9 @@
 // src/components/navigation/BrunoTabBar.tsx
-// Floating Dynamic Island / Tactile Tab Bar (Satya style) with Spring Physics and Haptics
+// Exact 4-Tab Bar matching Design Template: [Home] [Program] [Progress] [Profile]
 
-import React, { useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
-import { Dumbbell, CalendarRange, Trophy, Building2 } from 'lucide-react-native';
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Home, Dumbbell, Trophy, User } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useBruno } from '../../context/BrunoContext';
 
@@ -25,24 +25,27 @@ export const BrunoTabBar: React.FC<BrunoTabBarProps> = ({
   const tabs = [
     {
       id: 'today' as TabType,
-      label: 'Today',
-      icon: Dumbbell,
-      badge: hasUnloggedWorkout,
+      label: 'Home',
+      icon: Home,
+      badge: false,
     },
     {
       id: 'program' as TabType,
       label: 'Program',
-      icon: CalendarRange,
+      icon: Dumbbell,
+      badge: hasUnloggedWorkout,
     },
     {
       id: 'review' as TabType,
-      label: 'Verdict',
+      label: 'Progress',
       icon: Trophy,
+      badge: false,
     },
     {
       id: 'profile' as TabType,
-      label: 'Gym & Gear',
-      icon: Building2,
+      label: 'Profile',
+      icon: User,
+      badge: false,
     },
   ];
 
@@ -156,7 +159,7 @@ const styles = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 3.5,
-    backgroundColor: '#EF4444',
+    backgroundColor: '#D9572B',
     borderWidth: 1.5,
   },
   tabLabel: {

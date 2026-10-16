@@ -1,5 +1,5 @@
 // src/theme/theme.ts
-// Clucky / Amble style design tokens with curated Light and Dark modes
+// Bruno design tokens matching the exact terracotta / warm ivory mobile design template
 
 export type ThemeMode = 'dark' | 'light';
 
@@ -23,11 +23,11 @@ export interface ThemeColors {
   textMuted: string;
   textInverted: string;
   
-  // Brand & Accents
-  amber: string;
-  amberLight: string;
-  amberDark: string;
-  amberGlow: string;
+  // Brand Terracotta Accents
+  amber: string;          // Terracotta / Burnt Orange
+  amberLight: string;     // Soft Peach / Creamy Orange
+  amberDark: string;      // Deep Rust
+  amberGlow: string;      // Soft Glow
   
   // Feedback
   success: string;
@@ -45,74 +45,74 @@ export interface ThemeColors {
   cardShadow: string;
 }
 
-export const darkTheme: ThemeColors = {
-  mode: 'dark',
-  background: '#07090E',
-  surface: '#0E131F',
-  surfaceSubtle: '#141B2D',
-  surfaceElevated: '#1A233A',
-  surfaceCard: '#101626',
-  
-  border: '#1E293B',
-  borderStrong: '#334155',
-  borderHighlight: 'rgba(245, 158, 11, 0.4)',
-  
-  textPrimary: '#F8FAFC',
-  textSecondary: '#94A3B8',
-  textMuted: '#64748B',
-  textInverted: '#07090E',
-  
-  amber: '#F59E0B',
-  amberLight: '#FDE68A',
-  amberDark: '#D97706',
-  amberGlow: 'rgba(245, 158, 11, 0.18)',
-  
-  success: '#10B981',
-  successBg: 'rgba(16, 185, 129, 0.12)',
-  danger: '#EF4444',
-  dangerBg: 'rgba(239, 68, 68, 0.14)',
-  info: '#3B82F6',
-  infoBg: 'rgba(59, 130, 246, 0.14)',
-  
-  chalkNoteBg: '#131A2B',
-  chalkBorder: '#2E3D5B',
-  tabBarBg: 'rgba(14, 19, 31, 0.94)',
-  tabBarBorder: 'rgba(30, 41, 59, 0.8)',
-  cardShadow: 'rgba(0, 0, 0, 0.5)',
-};
-
 export const lightTheme: ThemeColors = {
   mode: 'light',
-  background: '#F6F8FC',
-  surface: '#FFFFFF',
-  surfaceSubtle: '#F1F4F9',
-  surfaceElevated: '#E8EDF5',
+  background: '#FAF6F0',         // Warm sand / ivory paper
+  surface: '#FFFFFF',            // Crisp card surface
+  surfaceSubtle: '#F4ECE1',      // Subdued container
+  surfaceElevated: '#EDE4D6',
   surfaceCard: '#FFFFFF',
   
-  border: '#E2E8F0',
-  borderStrong: '#CBD5E1',
-  borderHighlight: 'rgba(217, 119, 6, 0.4)',
+  border: '#EFE6D8',            // Soft warm border
+  borderStrong: '#DFCFC0',
+  borderHighlight: '#D9572B',   // Terracotta orange
   
-  textPrimary: '#0F172A',
-  textSecondary: '#475569',
-  textMuted: '#94A3B8',
+  textPrimary: '#1E1915',        // Deep warm charcoal
+  textSecondary: '#6B6055',      // Medium warm slate
+  textMuted: '#9B9085',
   textInverted: '#FFFFFF',
   
-  amber: '#D97706',
-  amberLight: '#FEF3C7',
-  amberDark: '#B45309',
-  amberGlow: 'rgba(217, 119, 6, 0.14)',
+  amber: '#D9572B',              // Terracotta brand orange
+  amberLight: '#FFF0EB',         // Peach highlight
+  amberDark: '#BD461D',
+  amberGlow: 'rgba(217, 87, 43, 0.12)',
   
-  success: '#059669',
-  successBg: 'rgba(16, 185, 129, 0.10)',
-  danger: '#DC2626',
-  dangerBg: 'rgba(239, 68, 68, 0.10)',
+  success: '#2E8540',
+  successBg: '#EAF5EC',
+  danger: '#D9381E',
+  dangerBg: '#FDF0ED',
   info: '#2563EB',
-  infoBg: 'rgba(37, 99, 235, 0.10)',
+  infoBg: '#EFF6FF',
   
-  chalkNoteBg: '#FFFBEB',
-  chalkBorder: '#FDE68A',
-  tabBarBg: 'rgba(255, 255, 255, 0.94)',
-  tabBarBorder: 'rgba(226, 232, 240, 0.9)',
-  cardShadow: 'rgba(15, 23, 42, 0.08)',
+  chalkNoteBg: '#FFFDF9',
+  chalkBorder: '#EFE4D6',
+  tabBarBg: 'rgba(255, 255, 255, 0.96)',
+  tabBarBorder: '#EFE6D8',
+  cardShadow: 'rgba(50, 35, 20, 0.06)',
+};
+
+export const darkTheme: ThemeColors = {
+  mode: 'dark',
+  background: '#121110',         // Deep warm obsidian
+  surface: '#1A1816',
+  surfaceSubtle: '#23201C',
+  surfaceElevated: '#2C2824',
+  surfaceCard: '#1E1C1A',
+  
+  border: '#2F2B26',
+  borderStrong: '#443F39',
+  borderHighlight: '#E0683E',
+  
+  textPrimary: '#FBF8F4',
+  textSecondary: '#A9A097',
+  textMuted: '#746D66',
+  textInverted: '#121110',
+  
+  amber: '#E0683E',              // Warm glowing terracotta
+  amberLight: '#3D251D',
+  amberDark: '#C9532A',
+  amberGlow: 'rgba(224, 104, 62, 0.18)',
+  
+  success: '#34D399',
+  successBg: 'rgba(52, 211, 153, 0.14)',
+  danger: '#F87171',
+  dangerBg: 'rgba(248, 113, 113, 0.14)',
+  info: '#60A5FA',
+  infoBg: 'rgba(96, 165, 250, 0.14)',
+  
+  chalkNoteBg: '#211E1A',
+  chalkBorder: '#3A342E',
+  tabBarBg: 'rgba(26, 24, 22, 0.96)',
+  tabBarBorder: '#2F2B26',
+  cardShadow: 'rgba(0, 0, 0, 0.5)',
 };

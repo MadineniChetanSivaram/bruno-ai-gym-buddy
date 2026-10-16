@@ -13,6 +13,7 @@ import {
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { BrunoProvider, useBruno } from './src/context/BrunoContext';
 import { OnboardingFlow } from './src/components/onboarding/OnboardingFlow';
+import { HomeDashboardView } from './src/components/views/HomeDashboardView';
 import { TodayWorkoutView } from './src/components/views/TodayWorkoutView';
 import { ProgramPlanView } from './src/components/views/ProgramPlanView';
 import { WeeklyReviewView } from './src/components/views/WeeklyReviewView';
@@ -99,8 +100,10 @@ const MainApp: React.FC = () => {
 
       {/* Main Screen Views */}
       <View style={styles.screenContainer}>
-        {activeTab === 'today' && <TodayWorkoutView />}
-        {activeTab === 'program' && <ProgramPlanView />}
+        {activeTab === 'today' && (
+          <HomeDashboardView onStartWorkout={() => setActiveTab('program')} />
+        )}
+        {activeTab === 'program' && <TodayWorkoutView />}
         {activeTab === 'review' && <WeeklyReviewView />}
         {activeTab === 'profile' && <GymProfileView />}
       </View>

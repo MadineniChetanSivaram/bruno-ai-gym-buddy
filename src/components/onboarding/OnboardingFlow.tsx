@@ -1,6 +1,6 @@
 // src/components/onboarding/OnboardingFlow.tsx
-// Immersive 5-Step Onboarding with Hardware Checklist, Injury Blacklist & 3-Second Program Generation
-// Satya / Clucky style: High-craft, 100% native React Native, spring physics, dynamic themes & haptics
+// Exact 8-Step Onboarding Flow matching the design template photos
+// Photorealistic 3D Bruno Bear Mascot, terracotta orange highlights & warm ivory background
 
 import React, { useState } from 'react';
 import { 
@@ -10,527 +10,733 @@ import {
   ScrollView, 
   StyleSheet, 
   SafeAreaView,
-  ActivityIndicator,
-  Animated
+  TextInput,
+  Image
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Building2, ShieldCheck, Dumbbell, Calendar, Clock, Check, Sparkles } from 'lucide-react-native';
+import { 
+  Dumbbell, 
+  RotateCw, 
+  TrendingUp, 
+  Check, 
+  ChevronRight, 
+  ArrowLeft,
+  Building2,
+  Calendar,
+  Clock,
+  Sparkles
+} from 'lucide-react-native';
 import { UserProfile, GymEnvironment, JointContraindication } from '../../types';
 import { useBruno } from '../../context/BrunoContext';
-import { TactileButton } from '../common/TactileButton';
-import { BrunoCharacterSvg } from '../mascot/BrunoCharacterSvg';
+import { BrunoMascotImage } from '../mascot/BrunoMascotImage';
 
 interface OnboardingFlowProps {
   onComplete: (profile: UserProfile) => void;
 }
 
 export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
-  const { colors, theme } = useBruno();
-  const [step, setStep] = useState<number>(1);
-  const [userName, setUserName] = useState('Lifter');
-  
-  // Hardware Selection
-  const [selectedGymType, setSelectedGymType] = useState<'commercial' | 'apartment' | 'home'>('commercial');
-  const [maxDbWeight, setMaxDbWeight] = useState(50);
-  const [hasBarbell, setHasBarbell] = useState(true);
-  const [hasCables, setHasCables] = useState(true);
-  
-  // Injury Blacklist
-  const [selectedInjuries, setSelectedInjuries] = useState<JointContraindication[]>([]);
-  
-  // Schedule & Time Budget
-  const [daysPerWeek, setDaysPerWeek] = useState<3 | 4 | 5 | 6>(4);
-  const [sessionMinutes, setSessionMinutes] = useState<30 | 45 | 60>(45);
+  const { colors } = useBruno();
+  // Steps 1 to 8:
+  // 1: Splash / Intro
+  // 2: Value Proposition
+  // 3: Goal Selection
+  // 4: Experience Level
+  // 5: Training Frequency & Duration
+  // 6: Onboarding Complete ("You're all set!")
+  // 7: Gym Equipment Setup (2/5)
+  // 8: Physical Profile & Movement Restrictions (3/5)
+  const [currentStep, setCurrentStep] = useState<number>(1);
 
-  // Generation state
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [genMessage, setGenMessage] = useState('Chalking up paws...');
+  // Form State
+  const [goal, setGoal] = useState<'strength' | 'muscle' | 'fitness' | 'recomp'>('strength');
+  const [experience, setExperience] = useState<'beginner' | 'intermediate' | 'advanced'>('intermediate');
+  const [daysPerWeek, setDaysPerWeek] = useState<3 | 4 | 5 | 6>(5);
+  const [durationMinutes, setDurationMinutes] = useState<30 | 45 | 60>(45);
+  
+  // Gym Equipment
+  const [gymName, setGymName] = useState('My Commercial Gym');
+  const [equipment, setEquipment] = useState<{ [key: string]: boolean }>({
+    dumbbells: true,
+    barbell: true,
+    cables: true,
+    smith: true,
+    pullup: true,
+    other: true,
+  });
+  const [maxDumbbellWeight, setMaxDumbbellWeight] = useState(40);
 
-  const goToNextStep = (nextStep: number) => {
+  // Injuries / Restrictions
+  const [injuries, setInjuries] = useState<JointContraindication[]>(['lower_back']);
+
+  const nextStep = () => {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } catch (_) {}
-    setStep(nextStep);
-  };
-
-  const toggleInjury = (injury: JointContraindication) => {
-    try {
-      Haptics.selectionAsync();
-    } catch (_) {}
-    if (selectedInjuries.includes(injury)) {
-      setSelectedInjuries(selectedInjuries.filter(i => i !== injury));
+    if (currentStep < 8) {
+      setCurrentStep(currentStep + 1);
     } else {
-      setSelectedInjuries([...selectedInjuries, injury]);
+      handleFinalComplete();
     }
   };
 
-  const handleStartGeneration = () => {
+  const prevStep = () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (_) {}
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const toggleEquipment = (key: string) => {
+    try {
+      Haptics.selectionAsync();
+    } catch (_) {}
+    setEquipment(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const toggleInjury = (joint: JointContraindication) => {
+    try {
+      Haptics.selectionAsync();
+    } catch (_) {}
+    if (injuries.includes(joint)) {
+      setInjuries(injuries.filter(j => j !== joint));
+    } else {
+      setInjuries([...injuries, joint]);
+    }
+  };
+
+  const handleFinalComplete = () => {
     try {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (_) {}
-    setIsGenerating(true);
-    setGenMessage('Bruno is scanning your gym equipment...');
-    
-    setTimeout(() => {
-      setGenMessage('Blacklisting contraindicated joint movements...');
-    }, 900);
 
-    setTimeout(() => {
-      setGenMessage('Balancing 10–16 weekly sets per muscle group...');
-    }, 1800);
+    const customGym: GymEnvironment = {
+      id: 'gym_' + Date.now(),
+      name: gymName || 'My Commercial Gym',
+      type: 'commercial',
+      maxDumbbellWeightKg: maxDumbbellWeight,
+      hasBarbellRack: equipment.barbell,
+      hasCableStack: equipment.cables,
+      hasSmithMachine: equipment.smith,
+      hasPullUpBar: equipment.pullup,
+    };
 
-    setTimeout(() => {
-      setGenMessage('Locking 6-Week Progressive Overload Mesocycle...');
-    }, 2500);
+    const finalProfile: UserProfile = {
+      id: 'user_alex',
+      name: 'Alex',
+      unit: 'kg',
+      activeGymId: customGym.id,
+      gymEnvironments: [customGym],
+      injuryBlacklist: injuries,
+      daysPerWeek: daysPerWeek,
+      sessionDurationMinutes: durationMinutes,
+      onboardingCompleted: true,
+      currentStreakWeeks: 1,
+    };
 
-    setTimeout(() => {
-      const activeGym: GymEnvironment = {
-        id: selectedGymType + '_custom',
-        name: selectedGymType === 'commercial' ? 'Commercial Powerhouse' : selectedGymType === 'apartment' ? 'Apartment Fitness' : 'Home Dumbbells',
-        type: selectedGymType,
-        maxDumbbellWeightKg: maxDbWeight,
-        hasBarbellRack: hasBarbell,
-        hasCableStack: hasCables,
-        hasSmithMachine: selectedGymType === 'commercial',
-        hasPullUpBar: true,
-      };
-
-      const finalProfile: UserProfile = {
-        id: 'user_' + Date.now(),
-        name: userName,
-        unit: 'kg',
-        activeGymId: activeGym.id,
-        gymEnvironments: [activeGym],
-        injuryBlacklist: selectedInjuries,
-        daysPerWeek,
-        sessionDurationMinutes: sessionMinutes,
-        onboardingCompleted: true,
-        currentStreakWeeks: 1,
-      };
-
-      setIsGenerating(false);
-      onComplete(finalProfile);
-    }, 3400);
+    onComplete(finalProfile);
   };
-
-  // 3-Second Autonomous Mesocycle Loading Overlay
-  if (isGenerating) {
-    return (
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-        <View style={styles.generatingContainer}>
-          <BrunoCharacterSvg expression="intense_lift" size={140} animated={true} />
-          <Text style={[styles.genTitle, { color: colors.textPrimary, marginTop: 16 }]}>
-            Bruno is Writing Your Program
-          </Text>
-          <Text style={[styles.genSubtitle, { color: colors.amber }]}>
-            {genMessage}
-          </Text>
-          <ActivityIndicator size="large" color={colors.amber} style={{ marginTop: 24 }} />
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      <View style={styles.container}>
+      
+      {/* Top Header Bar for Steps 2 to 8 */}
+      {currentStep > 1 && (
+        <View style={styles.topNavigation}>
+          <TouchableOpacity onPress={prevStep} style={styles.backButton}>
+            <ArrowLeft size={20} color={colors.textPrimary} />
+          </TouchableOpacity>
 
-        {/* Top Stepper Progress Pills */}
-        <View style={styles.progressRow}>
-          {[1, 2, 3, 4].map(s => (
-            <View 
-              key={s} 
-              style={[
-                styles.progressBar, 
-                { backgroundColor: colors.surfaceSubtle },
-                s <= step && { backgroundColor: colors.amber },
-              ]} 
-            />
-          ))}
+          {/* Stepper Dots */}
+          <View style={styles.stepIndicatorContainer}>
+            {[2, 3, 4, 5, 6, 7, 8].map((s) => (
+              <View 
+                key={s} 
+                style={[
+                  styles.stepDot, 
+                  { backgroundColor: colors.borderStrong },
+                  s <= currentStep && { backgroundColor: colors.amber }
+                ]} 
+              />
+            ))}
+          </View>
+
+          <TouchableOpacity onPress={() => setCurrentStep(8)} style={styles.skipButton}>
+            <Text style={[styles.skipText, { color: colors.textSecondary }]}>Skip</Text>
+          </TouchableOpacity>
         </View>
+      )}
 
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContainer} 
+        showsVerticalScrollIndicator={false}
+      >
 
-          {/* STEP 1: WELCOME TO THE DEN */}
-          {step === 1 && (
-            <View style={styles.stepContainer}>
-              <View style={styles.mascotAvatarLarge}>
-                <BrunoCharacterSvg expression="idle_reading" size={150} animated={true} />
-              </View>
-
-              <View style={[styles.kickerPill, { backgroundColor: colors.amberGlow }]}>
-                <Text style={[styles.stepKicker, { color: colors.amber }]}>
-                  ENTER BRUNO'S DEN
-                </Text>
-              </View>
-
-              <Text style={[styles.stepTitle, { color: colors.textPrimary }]}>
-                Zero Spreadsheets. Pure Strength.
-              </Text>
-              <Text style={[styles.stepDesc, { color: colors.textSecondary }]}>
-                Most apps make you stare at your screen during rest periods. Bruno is your heavyweight bear buddy: he prescribes your 6-week routine, swaps busy machines in 1 tap, and progresses your weights automatically.
-              </Text>
-
-              <View style={styles.featureHighlights}>
-                <View style={[styles.highlightCard, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
-                  <Text style={styles.highlightEmoji}>🏛️</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.highlightTitle, { color: colors.textPrimary }]}>
-                      Equipment Aware
-                    </Text>
-                    <Text style={[styles.highlightDesc, { color: colors.textSecondary }]}>
-                      Calibrated precisely to your gym hardware and dumbbell limits.
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={[styles.highlightCard, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
-                  <Text style={styles.highlightEmoji}>🛡️</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.highlightTitle, { color: colors.textPrimary }]}>
-                      Joint Injury Blacklist
-                    </Text>
-                    <Text style={[styles.highlightDesc, { color: colors.textSecondary }]}>
-                      Automatically substitutes movements that impinge your joints.
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={[styles.highlightCard, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
-                  <Text style={styles.highlightEmoji}>⚡</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.highlightTitle, { color: colors.textPrimary }]}>
-                      30-Second Frictionless Log
-                    </Text>
-                    <Text style={[styles.highlightDesc, { color: colors.textSecondary }]}>
-                      1 tap to confirm session targets. Zero tedious set-by-set typing.
-                    </Text>
-                  </View>
-                </View>
-              </View>
-
-              <TactileButton
-                onPress={() => goToNextStep(2)}
-                title="Configure Gym Hardware →"
-                size="lg"
-                variant="primary"
-                style={{ width: '100%', marginTop: 8 }}
-              />
+        {/* ============================================================== */}
+        {/* SCREEN 1: SPLASH / INTRO                                        */}
+        {/* ============================================================== */}
+        {currentStep === 1 && (
+          <View style={styles.screenWrapper}>
+            {/* Title 3D Graphic */}
+            <View style={styles.splashTitleBox}>
+              <Text style={styles.splashBrand}>BRUNO</Text>
+              <Text style={styles.splashSubBrand}>AI GYM BUDDY</Text>
             </View>
-          )}
 
-          {/* STEP 2: GYM HARDWARE */}
-          {step === 2 && (
-            <View style={styles.stepContainer}>
-              <View style={[styles.kickerPill, { backgroundColor: colors.amberGlow }]}>
-                <Text style={[styles.stepKicker, { color: colors.amber }]}>
-                  STEP 1 OF 3 • HARDWARE PROFILE
-                </Text>
-              </View>
-
-              <Text style={[styles.stepTitle, { color: colors.textPrimary }]}>
-                Where Do You Lift?
-              </Text>
-              <Text style={[styles.stepDesc, { color: colors.textSecondary }]}>
-                Bruno will never prescribe an exercise you lack equipment for. Select your primary gym environment:
-              </Text>
-
-              <View style={styles.optionsGrid}>
-                {/* Commercial */}
-                <TouchableOpacity 
-                  activeOpacity={0.82}
-                  onPress={() => {
-                    try { Haptics.selectionAsync(); } catch (_) {}
-                    setSelectedGymType('commercial');
-                    setHasBarbell(true);
-                    setHasCables(true);
-                    setMaxDbWeight(50);
-                  }}
-                  style={[
-                    styles.tierOption, 
-                    { backgroundColor: colors.surfaceCard, borderColor: colors.border },
-                    selectedGymType === 'commercial' && { backgroundColor: colors.amberGlow, borderColor: colors.amber }
-                  ]}
-                >
-                  <View style={styles.optionHeader}>
-                    <Text style={styles.optionEmoji}>🏛️</Text>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.optionName, { color: colors.textPrimary }]}>Commercial Gym</Text>
-                      <Text style={[styles.optionDesc, { color: colors.textSecondary }]}>
-                        Full barbell racks, cables, leg press, dumbbells up to 50+ kg.
-                      </Text>
-                    </View>
-                    {selectedGymType === 'commercial' && (
-                      <View style={[styles.selectedCheck, { backgroundColor: colors.amber }]}>
-                        <Check size={14} color={colors.textInverted} strokeWidth={3} />
-                      </View>
-                    )}
-                  </View>
-                </TouchableOpacity>
-
-                {/* Apartment */}
-                <TouchableOpacity 
-                  activeOpacity={0.82}
-                  onPress={() => {
-                    try { Haptics.selectionAsync(); } catch (_) {}
-                    setSelectedGymType('apartment');
-                    setHasBarbell(false);
-                    setHasCables(true);
-                    setMaxDbWeight(24);
-                  }}
-                  style={[
-                    styles.tierOption, 
-                    { backgroundColor: colors.surfaceCard, borderColor: colors.border },
-                    selectedGymType === 'apartment' && { backgroundColor: colors.amberGlow, borderColor: colors.amber }
-                  ]}
-                >
-                  <View style={styles.optionHeader}>
-                    <Text style={styles.optionEmoji}>🏢</Text>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.optionName, { color: colors.textPrimary }]}>Apartment / Hotel Gym</Text>
-                      <Text style={[styles.optionDesc, { color: colors.textSecondary }]}>
-                        Dumbbells up to 24kg & cable stack. No heavy barbell racks.
-                      </Text>
-                    </View>
-                    {selectedGymType === 'apartment' && (
-                      <View style={[styles.selectedCheck, { backgroundColor: colors.amber }]}>
-                        <Check size={14} color={colors.textInverted} strokeWidth={3} />
-                      </View>
-                    )}
-                  </View>
-                </TouchableOpacity>
-
-                {/* Home Studio */}
-                <TouchableOpacity 
-                  activeOpacity={0.82}
-                  onPress={() => {
-                    try { Haptics.selectionAsync(); } catch (_) {}
-                    setSelectedGymType('home');
-                    setHasBarbell(false);
-                    setHasCables(false);
-                    setMaxDbWeight(20);
-                  }}
-                  style={[
-                    styles.tierOption, 
-                    { backgroundColor: colors.surfaceCard, borderColor: colors.border },
-                    selectedGymType === 'home' && { backgroundColor: colors.amberGlow, borderColor: colors.amber }
-                  ]}
-                >
-                  <View style={styles.optionHeader}>
-                    <Text style={styles.optionEmoji}>🏠</Text>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.optionName, { color: colors.textPrimary }]}>Home Dumbbell Studio</Text>
-                      <Text style={[styles.optionDesc, { color: colors.textSecondary }]}>
-                        Dumbbells up to 20kg and pull-up bar. Pure dumbbell routines.
-                      </Text>
-                    </View>
-                    {selectedGymType === 'home' && (
-                      <View style={[styles.selectedCheck, { backgroundColor: colors.amber }]}>
-                        <Check size={14} color={colors.textInverted} strokeWidth={3} />
-                      </View>
-                    )}
-                  </View>
-                </TouchableOpacity>
-              </View>
-
-              <TactileButton
-                onPress={() => goToNextStep(3)}
-                title="Select Injury Protections →"
-                size="lg"
-                variant="primary"
-                style={{ width: '100%', marginTop: 8 }}
-              />
+            {/* Mascot Centerpiece */}
+            <View style={styles.splashMascotContainer}>
+              <BrunoMascotImage pose="splash" size={240} animated={true} />
             </View>
-          )}
 
-          {/* STEP 3: INJURY BLACKLIST */}
-          {step === 3 && (
-            <View style={styles.stepContainer}>
-              <View style={[styles.kickerPill, { backgroundColor: colors.amberGlow }]}>
-                <Text style={[styles.stepKicker, { color: colors.amber }]}>
-                  STEP 2 OF 3 • JOINT HEALTH
-                </Text>
+            {/* Headlines */}
+            <View style={styles.splashTextContainer}>
+              <Text style={[styles.mainHeroTitle, { color: colors.textPrimary }]}>
+                Smarter Strength Training.{'\n'}Less Hassle.
+              </Text>
+              <Text style={[styles.mainHeroSubtitle, { color: colors.textSecondary }]}>
+                Bruno designs your workouts, adapts to your gym and helps you get stronger without the spreadsheets.
+              </Text>
+            </View>
+
+            {/* 3 Value Pillars */}
+            <View style={styles.pillarsRow}>
+              <View style={[styles.pillarItem, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
+                <Dumbbell size={18} color={colors.amber} />
+                <Text style={[styles.pillarLabel, { color: colors.textPrimary }]}>Personalized{'\n'}programs</Text>
+              </View>
+              <View style={[styles.pillarItem, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
+                <RotateCw size={18} color={colors.amber} />
+                <Text style={[styles.pillarLabel, { color: colors.textPrimary }]}>Smart machine{'\n'}swaps</Text>
+              </View>
+              <View style={[styles.pillarItem, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
+                <TrendingUp size={18} color={colors.amber} />
+                <Text style={[styles.pillarLabel, { color: colors.textPrimary }]}>Automatic{'\n'}progression</Text>
+              </View>
+            </View>
+
+            {/* Bottom Get Started CTA */}
+            <TouchableOpacity 
+              activeOpacity={0.88}
+              onPress={nextStep}
+              style={[styles.primaryTerracottaBtn, { backgroundColor: colors.amber }]}
+            >
+              <Text style={styles.btnTextWhite}>Get Started →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ============================================================== */}
+        {/* SCREEN 2: VALUE PROPOSITION                                    */}
+        {/* ============================================================== */}
+        {currentStep === 2 && (
+          <View style={styles.screenWrapper}>
+            <View style={styles.headingBox}>
+              <Text style={[styles.stepTitle, { color: colors.textPrimary }]}>
+                Your Personal Gym Coach
+              </Text>
+              <Text style={[styles.stepSubtitle, { color: colors.textSecondary }]}>
+                Bruno plans, adapts and evolves your training so you can just show up and lift.
+              </Text>
+            </View>
+
+            {/* Mascot Flexing */}
+            <View style={styles.flexMascotBox}>
+              <BrunoMascotImage pose="flex" size={170} animated={true} />
+            </View>
+
+            {/* 3 Detailed Feature Cards */}
+            <View style={styles.featureCardsCol}>
+              <View style={[styles.featureRowCard, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
+                <View style={[styles.featureIconBadge, { backgroundColor: colors.amberLight }]}>
+                  <Dumbbell size={20} color={colors.amber} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.featureCardTitle, { color: colors.textPrimary }]}>Personalized programs</Text>
+                  <Text style={[styles.featureCardDesc, { color: colors.textSecondary }]}>for your goals and equipment</Text>
+                </View>
               </View>
 
+              <View style={[styles.featureRowCard, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
+                <View style={[styles.featureIconBadge, { backgroundColor: colors.amberLight }]}>
+                  <RotateCw size={20} color={colors.amber} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.featureCardTitle, { color: colors.textPrimary }]}>Smart exercise swaps</Text>
+                  <Text style={[styles.featureCardDesc, { color: colors.textSecondary }]}>when machines are busy</Text>
+                </View>
+              </View>
+
+              <View style={[styles.featureRowCard, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
+                <View style={[styles.featureIconBadge, { backgroundColor: colors.amberLight }]}>
+                  <TrendingUp size={20} color={colors.amber} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.featureCardTitle, { color: colors.textPrimary }]}>Automatic progressive</Text>
+                  <Text style={[styles.featureCardDesc, { color: colors.textSecondary }]}>overload and deloads</Text>
+                </View>
+              </View>
+            </View>
+
+            <TouchableOpacity 
+              activeOpacity={0.88}
+              onPress={nextStep}
+              style={[styles.primaryTerracottaBtn, { backgroundColor: colors.amber }]}
+            >
+              <Text style={styles.btnTextWhite}>Next →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ============================================================== */}
+        {/* SCREEN 3: GOAL SELECTION                                       */}
+        {/* ============================================================== */}
+        {currentStep === 3 && (
+          <View style={styles.screenWrapper}>
+            <View style={styles.headingBox}>
               <Text style={[styles.stepTitle, { color: colors.textPrimary }]}>
-                Any Joints to Protect?
+                What's your main goal?
               </Text>
-              <Text style={[styles.stepDesc, { color: colors.textSecondary }]}>
-                Select any areas with pain or sensitivity. Bruno will substitute impinging movements with biomechanically safe variations:
+              <Text style={[styles.stepSubtitle, { color: colors.textSecondary }]}>
+                Bruno will tailor your program accordingly.
               </Text>
+            </View>
 
-              <View style={styles.injuryGrid}>
-                {[
-                  { id: 'lower_back' as JointContraindication, label: 'Lower Back', sub: 'Replaces heavy axial spinal loads (Deadlifts, Squats) with chest-supported work' },
-                  { id: 'shoulder' as JointContraindication, label: 'Shoulders', sub: 'Substitutes wide flaring benches for neutral dumbbell grips & cables' },
-                  { id: 'knee' as JointContraindication, label: 'Knees', sub: 'Prioritizes hip hinges, leg press, and hamstring curls over deep squats' },
-                  { id: 'wrist' as JointContraindication, label: 'Wrists', sub: 'Replaces straight barbells with neutral dumbbells & angled grips' },
-                  { id: 'elbow' as JointContraindication, label: 'Elbows', sub: 'Replaces skullcrushers with triceps rope pushdowns' },
-                ].map((item) => {
-                  const isChecked = selectedInjuries.includes(item.id);
+            <View style={styles.optionsList}>
+              {[
+                { id: 'strength', title: 'Build Strength', desc: 'Get stronger and lift heavier', icon: '🏋️' },
+                { id: 'muscle', title: 'Build Muscle', desc: 'Gain size and improve physique', icon: '💪' },
+                { id: 'fitness', title: 'General Fitness', desc: 'Be healthier and more active', icon: '🏃' },
+                { id: 'recomp', title: 'Recomposition', desc: 'Lose fat and build muscle', icon: '🔥' },
+              ].map(opt => {
+                const isSelected = goal === opt.id;
+                return (
+                  <TouchableOpacity
+                    key={opt.id}
+                    onPress={() => setGoal(opt.id as any)}
+                    style={[
+                      styles.selectableRowCard,
+                      { backgroundColor: colors.surfaceCard, borderColor: colors.border },
+                      isSelected && { borderColor: colors.amber, backgroundColor: colors.amberLight }
+                    ]}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={{ fontSize: 26, marginRight: 12 }}>{opt.icon}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.optionTitleText, { color: colors.textPrimary }]}>{opt.title}</Text>
+                      <Text style={[styles.optionDescText, { color: colors.textSecondary }]}>{opt.desc}</Text>
+                    </View>
+                    <View style={[
+                      styles.radioCircle,
+                      { borderColor: colors.borderStrong },
+                      isSelected && { borderColor: colors.amber, backgroundColor: colors.amber }
+                    ]}>
+                      {isSelected && <View style={styles.radioInnerWhite} />}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
 
+            <TouchableOpacity 
+              activeOpacity={0.88}
+              onPress={nextStep}
+              style={[styles.primaryTerracottaBtn, { backgroundColor: colors.amber }]}
+            >
+              <Text style={styles.btnTextWhite}>Next →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ============================================================== */}
+        {/* SCREEN 4: TRAINING EXPERIENCE                                  */}
+        {/* ============================================================== */}
+        {currentStep === 4 && (
+          <View style={styles.screenWrapper}>
+            <View style={styles.headingBox}>
+              <Text style={[styles.stepTitle, { color: colors.textPrimary }]}>
+                What's your training experience?
+              </Text>
+              <Text style={[styles.stepSubtitle, { color: colors.textSecondary }]}>
+                This helps Bruno set the right starting point.
+              </Text>
+            </View>
+
+            <View style={styles.optionsList}>
+              {[
+                { id: 'beginner', title: 'Beginner', desc: '< 6 months\nNew to structured training', icon: '🎒' },
+                { id: 'intermediate', title: 'Intermediate', desc: '6 months – 3 years\nSome experience, consistent training', icon: '📊' },
+                { id: 'advanced', title: 'Advanced', desc: '3+ years\nExperienced with strength training', icon: '🏆' },
+              ].map(opt => {
+                const isSelected = experience === opt.id;
+                return (
+                  <TouchableOpacity
+                    key={opt.id}
+                    onPress={() => setExperience(opt.id as any)}
+                    style={[
+                      styles.selectableRowCard,
+                      { backgroundColor: colors.surfaceCard, borderColor: colors.border },
+                      isSelected && { borderColor: colors.amber, backgroundColor: colors.amberLight }
+                    ]}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={{ fontSize: 26, marginRight: 14 }}>{opt.icon}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.optionTitleText, { color: colors.textPrimary }]}>{opt.title}</Text>
+                      <Text style={[styles.optionDescText, { color: colors.textSecondary }]}>{opt.desc}</Text>
+                    </View>
+                    <View style={[
+                      styles.radioCircle,
+                      { borderColor: colors.borderStrong },
+                      isSelected && { borderColor: colors.amber, backgroundColor: colors.amber }
+                    ]}>
+                      {isSelected && <View style={styles.radioInnerWhite} />}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <TouchableOpacity 
+              activeOpacity={0.88}
+              onPress={nextStep}
+              style={[styles.primaryTerracottaBtn, { backgroundColor: colors.amber }]}
+            >
+              <Text style={styles.btnTextWhite}>Next →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ============================================================== */}
+        {/* SCREEN 5: FREQUENCY & DURATION                                 */}
+        {/* ============================================================== */}
+        {currentStep === 5 && (
+          <View style={styles.screenWrapper}>
+            <View style={styles.headingBox}>
+              <Text style={[styles.stepTitle, { color: colors.textPrimary }]}>
+                How often do you want to train?
+              </Text>
+            </View>
+
+            {/* Frequency Options */}
+            <View style={styles.optionsList}>
+              {[
+                { days: 3, label: '3 days per week', sub: 'Full body' },
+                { days: 4, label: '4 days per week', sub: 'Upper / Lower' },
+                { days: 5, label: '5 days per week', sub: 'Push Pull Legs' },
+                { days: 6, label: '6 days per week', sub: 'Push Pull Legs (advanced)' },
+              ].map(item => {
+                const isSelected = daysPerWeek === item.days;
+                return (
+                  <TouchableOpacity
+                    key={item.days}
+                    onPress={() => setDaysPerWeek(item.days as any)}
+                    style={[
+                      styles.selectableRowCardCompact,
+                      { backgroundColor: colors.surfaceCard, borderColor: colors.border },
+                      isSelected && { borderColor: colors.amber, backgroundColor: colors.amberLight }
+                    ]}
+                    activeOpacity={0.85}
+                  >
+                    <Calendar size={18} color={isSelected ? colors.amber : colors.textMuted} style={{ marginRight: 10 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.optionTitleText, { color: colors.textPrimary }]}>{item.label}</Text>
+                      <Text style={[styles.optionDescText, { color: colors.textSecondary }]}>{item.sub}</Text>
+                    </View>
+                    <View style={[
+                      styles.radioCircle,
+                      { borderColor: colors.borderStrong },
+                      isSelected && { borderColor: colors.amber, backgroundColor: colors.amber }
+                    ]}>
+                      {isSelected && <View style={styles.radioInnerWhite} />}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Session Duration Selector */}
+            <View style={{ marginTop: 18, marginBottom: 20 }}>
+              <Text style={[styles.sectionHeadingSmall, { color: colors.textPrimary }]}>
+                Preferred session duration
+              </Text>
+              <View style={styles.durationRow}>
+                {[30, 45, 60].map(mins => {
+                  const isSelected = durationMinutes === mins;
                   return (
                     <TouchableOpacity
-                      key={item.id}
-                      activeOpacity={0.8}
-                      onPress={() => toggleInjury(item.id)}
+                      key={mins}
+                      onPress={() => setDurationMinutes(mins as any)}
                       style={[
-                        styles.injuryCard,
+                        styles.durationPill,
                         { backgroundColor: colors.surfaceCard, borderColor: colors.border },
-                        isChecked && { backgroundColor: colors.dangerBg, borderColor: colors.danger }
+                        isSelected && { backgroundColor: colors.amber, borderColor: colors.amberDark }
                       ]}
+                      activeOpacity={0.8}
                     >
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.injuryCardTitle, { color: isChecked ? colors.danger : colors.textPrimary }]}>
-                          {item.label} {isChecked ? '🛡️ (Shielded)' : ''}
-                        </Text>
-                        <Text style={[styles.injuryCardSub, { color: colors.textSecondary }]}>
-                          {item.sub}
-                        </Text>
-                      </View>
-                      <View 
-                        style={[
-                          styles.checkboxSquare, 
-                          { borderColor: colors.borderStrong },
-                          isChecked && { backgroundColor: colors.danger, borderColor: colors.danger }
-                        ]}
-                      >
-                        {isChecked && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
-                      </View>
+                      <Text style={[
+                        styles.durationPillText,
+                        { color: colors.textPrimary },
+                        isSelected && { color: colors.textInverted, fontWeight: '900' }
+                      ]}>
+                        {mins} min
+                      </Text>
                     </TouchableOpacity>
                   );
                 })}
               </View>
-
-              <TactileButton
-                onPress={() => goToNextStep(4)}
-                title="Schedule & Time Budget →"
-                size="lg"
-                variant="primary"
-                style={{ width: '100%', marginTop: 8 }}
-              />
             </View>
-          )}
 
-          {/* STEP 4: SCHEDULE & COMMITMENT */}
-          {step === 4 && (
-            <View style={styles.stepContainer}>
-              <View style={[styles.kickerPill, { backgroundColor: colors.amberGlow }]}>
-                <Text style={[styles.stepKicker, { color: colors.amber }]}>
-                  STEP 3 OF 3 • LIFTING BUDGET
+            <TouchableOpacity 
+              activeOpacity={0.88}
+              onPress={nextStep}
+              style={[styles.primaryTerracottaBtn, { backgroundColor: colors.amber }]}
+            >
+              <Text style={styles.btnTextWhite}>Next →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ============================================================== */}
+        {/* SCREEN 6: YOU'RE ALL SET!                                      */}
+        {/* ============================================================== */}
+        {currentStep === 6 && (
+          <View style={styles.screenWrapperCenter}>
+            <Text style={[styles.stepTitleCenter, { color: colors.textPrimary }]}>
+              You're all set!
+            </Text>
+            <Text style={[styles.stepSubtitleCenter, { color: colors.textSecondary }]}>
+              Bruno is ready to build your personalized program.
+            </Text>
+
+            {/* Celebratory Bruno with Thumbs Up & Confetti */}
+            <View style={styles.centerMascotBox}>
+              <BrunoMascotImage pose="thumbs_up" size={190} animated={true} />
+            </View>
+
+            {/* Coach Speech Card */}
+            <View style={[styles.coachSpeechCard, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
+              <Text style={[styles.speechHeader, { color: colors.textPrimary }]}>
+                Let's get stronger together!
+              </Text>
+              <Text style={[styles.speechBody, { color: colors.textSecondary }]}>
+                I'll create your program based on your goals, equipment and schedule.
+              </Text>
+            </View>
+
+            <TouchableOpacity 
+              activeOpacity={0.88}
+              onPress={nextStep}
+              style={[styles.primaryTerracottaBtn, { backgroundColor: colors.amber, width: '100%', marginTop: 20 }]}
+            >
+              <Text style={styles.btnTextWhite}>Start Setting Up →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ============================================================== */}
+        {/* SCREEN 7: GYM EQUIPMENT SETUP (Step 2/5)                       */}
+        {/* ============================================================== */}
+        {currentStep === 7 && (
+          <View style={styles.screenWrapper}>
+            <View style={styles.stepHeaderRow}>
+              <Text style={[styles.stepBreadcrumb, { color: colors.textMuted }]}>2/5</Text>
+            </View>
+
+            <Text style={[styles.stepTitle, { color: colors.textPrimary }]}>
+              Set up your gym environment
+            </Text>
+            <Text style={[styles.stepSubtitle, { color: colors.textSecondary }]}>
+              Tell Bruno what equipment you have access to. You can save multiple gyms later.
+            </Text>
+
+            {/* Gym Name Input */}
+            <View style={[styles.inputBox, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
+              <Building2 size={18} color={colors.textSecondary} style={{ marginRight: 8 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Gym Name</Text>
+                <TextInput
+                  value={gymName}
+                  onChangeText={setGymName}
+                  style={[styles.inputText, { color: colors.textPrimary }]}
+                  placeholder="My Commercial Gym"
+                  placeholderTextColor={colors.textMuted}
+                />
+              </View>
+            </View>
+
+            {/* Available Equipment Grid */}
+            <Text style={[styles.sectionHeadingSmall, { color: colors.textPrimary, marginTop: 14 }]}>
+              Available Equipment
+            </Text>
+
+            <View style={styles.equipmentGrid}>
+              {[
+                { key: 'dumbbells', label: 'Dumbbells', icon: '🏋️' },
+                { key: 'barbell', label: 'Barbell & Squat Rack', icon: '⛓️' },
+                { key: 'cables', label: 'Cable Machine', icon: '⚙️' },
+                { key: 'smith', label: 'Smith Machine', icon: '🏗️' },
+                { key: 'pullup', label: 'Pull-up Bar', icon: '🤸' },
+                { key: 'other', label: 'Other Machines', icon: '🪑' },
+              ].map(item => {
+                const isChecked = equipment[item.key];
+                return (
+                  <TouchableOpacity
+                    key={item.key}
+                    onPress={() => toggleEquipment(item.key)}
+                    style={[
+                      styles.equipmentCard,
+                      { backgroundColor: colors.surfaceCard, borderColor: colors.border },
+                      isChecked && { borderColor: colors.amber, backgroundColor: colors.amberLight }
+                    ]}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.equipmentTopRow}>
+                      <Text style={{ fontSize: 24 }}>{item.icon}</Text>
+                      <View style={[
+                        styles.checkboxSmall,
+                        { borderColor: colors.borderStrong },
+                        isChecked && { backgroundColor: colors.amber, borderColor: colors.amber }
+                      ]}>
+                        {isChecked && <Check size={11} color="#FFFFFF" strokeWidth={3} />}
+                      </View>
+                    </View>
+                    <Text style={[styles.equipmentLabel, { color: colors.textPrimary }]}>
+                      {item.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Max Dumbbell Weight Input */}
+            <View style={[styles.maxDbCard, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.maxDbTitle, { color: colors.textPrimary }]}>Max Dumbbell Weight</Text>
+                <Text style={[styles.maxDbSub, { color: colors.textSecondary }]}>What's the heaviest dumbbell available at this gym?</Text>
+              </View>
+              <View style={[styles.dbValueBox, { backgroundColor: colors.surfaceSubtle, borderColor: colors.border }]}>
+                <TextInput
+                  value={String(maxDumbbellWeight)}
+                  onChangeText={(val) => setMaxDumbbellWeight(Number(val) || 0)}
+                  keyboardType="numeric"
+                  style={[styles.dbInput, { color: colors.textPrimary }]}
+                />
+                <Text style={[styles.dbUnit, { color: colors.textSecondary }]}>kg</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity 
+              activeOpacity={0.88}
+              onPress={nextStep}
+              style={[styles.primaryTerracottaBtn, { backgroundColor: colors.amber }]}
+            >
+              <Text style={styles.btnTextWhite}>Continue →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ============================================================== */}
+        {/* SCREEN 8: PHYSICAL PROFILE & RESTRICTIONS (Step 3/5)          */}
+        {/* ============================================================== */}
+        {currentStep === 8 && (
+          <View style={styles.screenWrapper}>
+            <View style={styles.stepHeaderRow}>
+              <Text style={[styles.stepBreadcrumb, { color: colors.textMuted }]}>3/5</Text>
+            </View>
+
+            <Text style={[styles.stepTitle, { color: colors.textPrimary }]}>
+              Your profile & training preferences
+            </Text>
+            <Text style={[styles.stepSubtitle, { color: colors.textSecondary }]}>
+              Help Bruno tailor your program to your body, schedule and any movement restrictions.
+            </Text>
+
+            {/* Summary Preferences */}
+            <View style={[styles.prefSummaryCard, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
+              {/* Training Experience */}
+              <View style={styles.prefSection}>
+                <Text style={[styles.prefLabel, { color: colors.textPrimary }]}>Training Experience</Text>
+                <View style={styles.segmentedRow}>
+                  {['beginner', 'intermediate', 'advanced'].map(lvl => (
+                    <TouchableOpacity
+                      key={lvl}
+                      onPress={() => setExperience(lvl as any)}
+                      style={[
+                        styles.segmentBtn,
+                        { borderColor: colors.border, backgroundColor: colors.surfaceSubtle },
+                        experience === lvl && { borderColor: colors.amber, backgroundColor: colors.amberLight }
+                      ]}
+                    >
+                      <Text style={[
+                        styles.segmentText,
+                        { color: colors.textSecondary },
+                        experience === lvl && { color: colors.amberDark, fontWeight: '800' }
+                      ]}>
+                        {lvl.charAt(0).toUpperCase() + lvl.slice(1)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Movement Restrictions / Injuries */}
+              <View style={{ marginTop: 14 }}>
+                <Text style={[styles.prefLabel, { color: colors.textPrimary }]}>Movement Restrictions / Injuries</Text>
+                <Text style={[styles.prefSub, { color: colors.textSecondary }]}>
+                  Select any areas you want to avoid or modify. Bruno will choose safer alternatives.
                 </Text>
-              </View>
 
-              <Text style={[styles.stepTitle, { color: colors.textPrimary }]}>
-                Your Weekly Training Budget
-              </Text>
-              <Text style={[styles.stepDesc, { color: colors.textSecondary }]}>
-                Bruno will distribute optimal muscle volume (10–16 sets/muscle/week) across your chosen frequency:
-              </Text>
-
-              {/* Days Per Week */}
-              <View style={[styles.budgetBox, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
-                <View style={styles.budgetHeader}>
-                  <Calendar size={16} color={colors.amber} />
-                  <Text style={[styles.budgetLabel, { color: colors.textPrimary }]}>
-                    Days Per Week
-                  </Text>
-                </View>
-                <View style={styles.budgetPillsRow}>
-                  {[3, 4, 5, 6].map((days) => {
-                    const isSelected = daysPerWeek === days;
+                <View style={styles.injuryChipsRow}>
+                  {[
+                    { id: 'lower_back' as JointContraindication, label: 'Lower back sensitivity' },
+                    { id: 'shoulder' as JointContraindication, label: 'Shoulder impingement' },
+                    { id: 'knee' as JointContraindication, label: 'Knee pain' },
+                    { id: 'elbow' as JointContraindication, label: 'Elbow pain' },
+                  ].map(item => {
+                    const isChecked = injuries.includes(item.id);
                     return (
                       <TouchableOpacity
-                        key={days}
-                        onPress={() => {
-                          try { Haptics.selectionAsync(); } catch (_) {}
-                          setDaysPerWeek(days as any);
-                        }}
+                        key={item.id}
+                        onPress={() => toggleInjury(item.id)}
                         style={[
-                          styles.budgetPill,
+                          styles.injuryChip,
                           { backgroundColor: colors.surfaceSubtle, borderColor: colors.border },
-                          isSelected && { backgroundColor: colors.amber, borderColor: colors.amberDark }
+                          isChecked && { backgroundColor: colors.amberLight, borderColor: colors.amber }
                         ]}
-                        activeOpacity={0.75}
                       >
-                        <Text style={[
-                          styles.budgetPillNum, 
-                          { color: colors.textSecondary },
-                          isSelected && { color: colors.textInverted, fontWeight: '900' }
+                        <View style={[
+                          styles.chipCheckbox,
+                          { borderColor: colors.borderStrong },
+                          isChecked && { backgroundColor: colors.amber, borderColor: colors.amber }
                         ]}>
-                          {days} Days
-                        </Text>
+                          {isChecked && <Check size={10} color="#FFFFFF" strokeWidth={3} />}
+                        </View>
                         <Text style={[
-                          styles.budgetPillSub, 
-                          { color: colors.textMuted },
-                          isSelected && { color: colors.textInverted }
+                          styles.injuryChipText,
+                          { color: colors.textPrimary },
+                          isChecked && { color: colors.amberDark, fontWeight: '800' }
                         ]}>
-                          {days === 3 ? 'Full Body' : days === 4 ? 'Upper/Lower' : 'Push/Pull/Legs'}
+                          {item.label}
                         </Text>
                       </TouchableOpacity>
                     );
                   })}
                 </View>
               </View>
-
-              {/* Session Duration */}
-              <View style={[styles.budgetBox, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
-                <View style={styles.budgetHeader}>
-                  <Clock size={16} color={colors.info} />
-                  <Text style={[styles.budgetLabel, { color: colors.textPrimary }]}>
-                    Session Duration
-                  </Text>
-                </View>
-                <View style={styles.budgetPillsRow}>
-                  {[30, 45, 60].map((mins) => {
-                    const isSelected = sessionMinutes === mins;
-                    return (
-                      <TouchableOpacity
-                        key={mins}
-                        onPress={() => {
-                          try { Haptics.selectionAsync(); } catch (_) {}
-                          setSessionMinutes(mins as any);
-                        }}
-                        style={[
-                          styles.budgetPill,
-                          { backgroundColor: colors.surfaceSubtle, borderColor: colors.border },
-                          isSelected && { backgroundColor: colors.amber, borderColor: colors.amberDark }
-                        ]}
-                        activeOpacity={0.75}
-                      >
-                        <Text style={[
-                          styles.budgetPillNum, 
-                          { color: colors.textSecondary },
-                          isSelected && { color: colors.textInverted, fontWeight: '900' }
-                        ]}>
-                          {mins} Mins
-                        </Text>
-                        <Text style={[
-                          styles.budgetPillSub, 
-                          { color: colors.textMuted },
-                          isSelected && { color: colors.textInverted }
-                        ]}>
-                          {mins === 30 ? '3 Movements' : mins === 45 ? '4 Movements' : '5 Movements'}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-
-              {/* Final Generation Button */}
-              <TactileButton
-                onPress={handleStartGeneration}
-                title="Generate 6-Week Routine (3s) ⚡"
-                size="lg"
-                variant="primary"
-                style={{ width: '100%', marginTop: 12 }}
-              />
             </View>
-          )}
 
-        </ScrollView>
-      </View>
+            <TouchableOpacity 
+              activeOpacity={0.88}
+              onPress={handleFinalComplete}
+              style={[styles.primaryTerracottaBtn, { backgroundColor: colors.amber, marginTop: 14 }]}
+            >
+              <Text style={styles.btnTextWhite}>Continue →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -539,214 +745,419 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  container: {
-    flex: 1,
-  },
-  generatingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 32,
-  },
-  mascotGenCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
-  genTitle: {
-    fontSize: 22,
-    fontWeight: '900',
-    letterSpacing: -0.4,
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  genSubtitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  progressRow: {
+  topNavigation: {
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 8,
-    gap: 8,
+    paddingTop: 8,
+    paddingBottom: 4,
   },
-  progressBar: {
-    flex: 1,
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepIndicatorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  stepDot: {
+    width: 22,
     height: 4,
     borderRadius: 2,
   },
-  content: {
+  skipButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  skipText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  scrollContainer: {
     paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingTop: 10,
     paddingBottom: 40,
   },
-  stepContainer: {
+  screenWrapper: {
+    flex: 1,
+  },
+  screenWrapperCenter: {
+    flex: 1,
     alignItems: 'center',
-    gap: 12,
   },
-  mascotAvatarLarge: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    borderWidth: 2,
+  splashTitleBox: {
     alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 10,
-  },
-  kickerPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  stepKicker: {
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 0.8,
-  },
-  stepTitle: {
-    fontSize: 24,
-    fontWeight: '900',
-    letterSpacing: -0.5,
-    textAlign: 'center',
-  },
-  stepDesc: {
-    fontSize: 13,
-    lineHeight: 20,
-    textAlign: 'center',
+    marginTop: 6,
     marginBottom: 8,
   },
-  featureHighlights: {
-    width: '100%',
-    gap: 10,
-    marginVertical: 10,
+  splashBrand: {
+    fontSize: 38,
+    fontWeight: '900',
+    color: '#D9572B',
+    letterSpacing: 2,
   },
-  highlightCard: {
-    flexDirection: 'row',
+  splashSubBrand: {
+    fontSize: 12,
+    fontWeight: '900',
+    color: '#6B6055',
+    letterSpacing: 2,
+    marginTop: -2,
+  },
+  splashMascotContainer: {
     alignItems: 'center',
-    gap: 12,
-    padding: 14,
-    borderRadius: 18,
-    borderWidth: 1.2,
+    justifyContent: 'center',
+    marginVertical: 12,
   },
-  highlightEmoji: {
+  splashTextContainer: {
+    alignItems: 'center',
+    marginBottom: 18,
+  },
+  mainHeroTitle: {
     fontSize: 24,
+    fontWeight: '900',
+    textAlign: 'center',
+    letterSpacing: -0.4,
+    lineHeight: 30,
   },
-  highlightTitle: {
+  mainHeroSubtitle: {
     fontSize: 13,
-    fontWeight: '800',
+    textAlign: 'center',
+    lineHeight: 19,
+    marginTop: 8,
+    paddingHorizontal: 12,
   },
-  highlightDesc: {
+  pillarsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 24,
+  },
+  pillarItem: {
+    flex: 1,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  pillarLabel: {
     fontSize: 11,
-    lineHeight: 16,
-    marginTop: 2,
+    fontWeight: '700',
+    textAlign: 'center',
+    lineHeight: 14,
   },
-  optionsGrid: {
-    width: '100%',
+  primaryTerracottaBtn: {
+    paddingVertical: 16,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#D9572B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  btnTextWhite: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '900',
+    letterSpacing: 0.2,
+  },
+  headingBox: {
+    marginBottom: 16,
+  },
+  stepTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: -0.4,
+  },
+  stepSubtitle: {
+    fontSize: 13,
+    marginTop: 6,
+    lineHeight: 19,
+  },
+  stepTitleCenter: {
+    fontSize: 24,
+    fontWeight: '900',
+    letterSpacing: -0.4,
+    textAlign: 'center',
+  },
+  stepSubtitleCenter: {
+    fontSize: 13,
+    marginTop: 6,
+    textAlign: 'center',
+  },
+  flexMascotBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 12,
+  },
+  centerMascotBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 18,
+  },
+  featureCardsCol: {
     gap: 10,
-    marginVertical: 10,
+    marginBottom: 24,
   },
-  tierOption: {
-    borderRadius: 18,
-    borderWidth: 1.2,
-    padding: 14,
-  },
-  optionHeader: {
+  featureRowCard: {
     flexDirection: 'row',
     alignItems: 'center',
+    padding: 14,
+    borderRadius: 18,
+    borderWidth: 1,
     gap: 12,
   },
-  optionEmoji: {
-    fontSize: 28,
-  },
-  optionName: {
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  optionDesc: {
-    fontSize: 11,
-    lineHeight: 16,
-    marginTop: 2,
-  },
-  selectedCheck: {
-    width: 24,
-    height: 24,
+  featureIconBadge: {
+    width: 42,
+    height: 42,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  injuryGrid: {
-    width: '100%',
-    gap: 10,
-    marginVertical: 10,
+  featureCardTitle: {
+    fontSize: 14,
+    fontWeight: '800',
   },
-  injuryCard: {
+  featureCardDesc: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  optionsList: {
+    gap: 10,
+    marginBottom: 24,
+  },
+  selectableRowCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 18,
+    borderWidth: 1.5,
+  },
+  selectableRowCardCompact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1.5,
+  },
+  optionTitleText: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  optionDescText: {
+    fontSize: 11,
+    marginTop: 2,
+    lineHeight: 15,
+  },
+  radioCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioInnerWhite: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FFFFFF',
+  },
+  sectionHeadingSmall: {
+    fontSize: 13,
+    fontWeight: '800',
+    marginBottom: 10,
+  },
+  durationRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  durationPill: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  durationPillText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  coachSpeechCard: {
+    padding: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    width: '100%',
+    alignItems: 'center',
+  },
+  speechHeader: {
+    fontSize: 15,
+    fontWeight: '900',
+    marginBottom: 4,
+  },
+  speechBody: {
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 17,
+  },
+  stepHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: 6,
+  },
+  stepBreadcrumb: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  inputBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginTop: 6,
+  },
+  inputLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  inputText: {
+    fontSize: 14,
+    fontWeight: '800',
+    marginTop: 2,
+  },
+  equipmentGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 6,
+  },
+  equipmentCard: {
+    width: '48%',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    padding: 12,
+  },
+  equipmentTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  checkboxSmall: {
+    width: 18,
+    height: 18,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  equipmentLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    lineHeight: 16,
+  },
+  maxDbCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 14,
-    borderRadius: 16,
-    borderWidth: 1.2,
-  },
-  injuryCardTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  injuryCardSub: {
-    fontSize: 11,
-    lineHeight: 15,
-    marginTop: 2,
-  },
-  checkboxSquare: {
-    width: 22,
-    height: 22,
-    borderRadius: 7,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 10,
-  },
-  budgetBox: {
-    width: '100%',
     borderRadius: 18,
-    borderWidth: 1.2,
-    padding: 14,
+    borderWidth: 1,
+    marginVertical: 14,
   },
-  budgetHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 10,
-  },
-  budgetLabel: {
+  maxDbTitle: {
     fontSize: 13,
     fontWeight: '800',
   },
-  budgetPillsRow: {
+  maxDbSub: {
+    fontSize: 10,
+    marginTop: 2,
+    maxWidth: 200,
+  },
+  dbValueBox: {
     flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  dbInput: {
+    fontSize: 15,
+    fontWeight: '900',
+    marginRight: 4,
+  },
+  dbUnit: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  prefSummaryCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 16,
+    marginTop: 8,
+  },
+  prefSection: {
+    marginBottom: 12,
+  },
+  prefLabel: {
+    fontSize: 13,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  prefSub: {
+    fontSize: 11,
+    lineHeight: 16,
+    marginBottom: 8,
+  },
+  segmentedRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  segmentBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  segmentText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  injuryChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
   },
-  budgetPill: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 4,
-    borderRadius: 12,
-    borderWidth: 1.2,
+  injuryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  chipCheckbox: {
+    width: 14,
+    height: 14,
+    borderRadius: 4,
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  budgetPillNum: {
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  budgetPillSub: {
-    fontSize: 9,
-    fontWeight: '600',
-    marginTop: 2,
+  injuryChipText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
 });
