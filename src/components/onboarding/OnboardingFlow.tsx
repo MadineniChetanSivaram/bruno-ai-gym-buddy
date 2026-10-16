@@ -28,7 +28,7 @@ import {
 } from 'lucide-react-native';
 import { UserProfile, GymEnvironment, JointContraindication } from '../../types';
 import { useBruno } from '../../context/BrunoContext';
-import { BrunoAnimatedMascot } from '../mascot/BrunoAnimatedMascot';
+import { BrunoMascotImage } from '../mascot/BrunoMascotImage';
 
 interface OnboardingFlowProps {
   onComplete: (profile: UserProfile) => void;
@@ -197,9 +197,11 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, onEx
 
             {/* Animated Waving Mascot Centerpiece */}
             <View style={styles.splashMascotContainer}>
-              <BrunoAnimatedMascot 
-                pose="saying_hi" 
-                size={175} 
+              <BrunoMascotImage 
+                pose="splash" 
+                size={200} 
+                animated={true}
+                showSpeechBubble={true}
                 customMessage="Hi! I'm Bruno, your AI Gym Buddy! 👋 Tap me anytime!" 
               />
             </View>
@@ -257,9 +259,11 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, onEx
 
             {/* Animated Mascot Flexing */}
             <View style={styles.flexMascotBox}>
-              <BrunoAnimatedMascot 
-                pose="flexing" 
-                size={155} 
+              <BrunoMascotImage 
+                pose="flex" 
+                size={165} 
+                animated={true}
+                showSpeechBubble={true}
                 customMessage="I calculate your progressive overload and switch machines when they're taken!" 
               />
             </View>
@@ -530,9 +534,11 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, onEx
 
             {/* Celebratory Bruno with Thumbs Up & Confetti */}
             <View style={styles.centerMascotBox}>
-              <BrunoAnimatedMascot 
+              <BrunoMascotImage 
                 pose="thumbs_up" 
-                size={165} 
+                size={175} 
+                animated={true}
+                showSpeechBubble={true}
                 customMessage="You're all set! Let's get stronger together!" 
               />
             </View>

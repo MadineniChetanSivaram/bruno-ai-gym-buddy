@@ -22,7 +22,7 @@ import {
   Calendar 
 } from 'lucide-react-native';
 import { useBruno } from '../../context/BrunoContext';
-import { BrunoAnimatedMascot } from '../mascot/BrunoAnimatedMascot';
+import { BrunoMascotImage } from '../mascot/BrunoMascotImage';
 
 interface HomeDashboardViewProps {
   onStartWorkout?: () => void;
@@ -70,7 +70,7 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({ onStartWor
           </View>
         </View>
 
-        {/* Animated Bruno Coach Centerpiece ("Saying Hi!" & Moving) */}
+        {/* Animated 3D Bruno Coach Card ("Saying Hi!" & Moving) */}
         <View 
           style={[
             styles.mascotCard, 
@@ -81,11 +81,24 @@ export const HomeDashboardView: React.FC<HomeDashboardViewProps> = ({ onStartWor
             }
           ]}
         >
-          <BrunoAnimatedMascot 
-            pose="saying_hi" 
-            size={135} 
-            customMessage="Hi Alex! Bumped you to 25 kg on dumbbell bench today! You got this, champion!"
-          />
+          <View style={styles.mascotImageWrapper}>
+            <BrunoMascotImage 
+              pose="dashboard" 
+              size={74} 
+              animated={true} 
+            />
+          </View>
+
+          <View style={styles.speechBubbleWrapper}>
+            <View style={[styles.speechBubble, { backgroundColor: colors.surfaceSubtle, borderColor: colors.border }]}>
+              <View style={styles.speechBubbleHeader}>
+                <Text style={[styles.coachTag, { color: colors.amber }]}>BRUNO'S NOTE 👋</Text>
+              </View>
+              <Text style={[styles.speechBubbleText, { color: colors.textPrimary }]}>
+                Hi Alex! Bumped you to 25 kg on dumbbell bench today! You got this, champion!
+              </Text>
+            </View>
+          </View>
         </View>
 
         {/* Today's Workout Hero Card */}
