@@ -28,7 +28,7 @@ import {
 } from 'lucide-react-native';
 import { UserProfile, GymEnvironment, JointContraindication } from '../../types';
 import { useBruno } from '../../context/BrunoContext';
-import { BrunoMascotImage } from '../mascot/BrunoMascotImage';
+import { BrunoAnimatedMascot } from '../mascot/BrunoAnimatedMascot';
 
 interface OnboardingFlowProps {
   onComplete: (profile: UserProfile) => void;
@@ -195,9 +195,13 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, onEx
               <Text style={styles.splashSubBrand}>AI GYM BUDDY</Text>
             </View>
 
-            {/* Mascot Centerpiece */}
+            {/* Animated Waving Mascot Centerpiece */}
             <View style={styles.splashMascotContainer}>
-              <BrunoMascotImage pose="splash" size={240} animated={true} />
+              <BrunoAnimatedMascot 
+                pose="saying_hi" 
+                size={175} 
+                customMessage="Hi! I'm Bruno, your AI Gym Buddy! 👋 Tap me anytime!" 
+              />
             </View>
 
             {/* Headlines */}
@@ -251,9 +255,13 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, onEx
               </Text>
             </View>
 
-            {/* Mascot Flexing */}
+            {/* Animated Mascot Flexing */}
             <View style={styles.flexMascotBox}>
-              <BrunoMascotImage pose="flex" size={170} animated={true} />
+              <BrunoAnimatedMascot 
+                pose="flexing" 
+                size={155} 
+                customMessage="I calculate your progressive overload and switch machines when they're taken!" 
+              />
             </View>
 
             {/* 3 Detailed Feature Cards */}
@@ -522,7 +530,11 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, onEx
 
             {/* Celebratory Bruno with Thumbs Up & Confetti */}
             <View style={styles.centerMascotBox}>
-              <BrunoMascotImage pose="thumbs_up" size={190} animated={true} />
+              <BrunoAnimatedMascot 
+                pose="thumbs_up" 
+                size={165} 
+                customMessage="You're all set! Let's get stronger together!" 
+              />
             </View>
 
             {/* Coach Speech Card */}
