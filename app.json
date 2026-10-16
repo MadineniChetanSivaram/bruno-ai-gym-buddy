@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "Bruno AI Gym Buddy",
+    "slug": "bruno-gym-buddy",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0F172A",
+    "splash": {
+      "backgroundColor": "#0F172A",
+      "resizeMode": "contain"
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
